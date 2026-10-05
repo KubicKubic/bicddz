@@ -107,14 +107,18 @@ def from_api(raw):
 class Policy:
     def __init__(self,config,checkpoint):
         cfg=json.loads(Path(config).read_text())
+        self.config=cfg
         self.own_value_clock=cfg.get('ppo',{}).get('gae_clock','public')=='own'
         model_type=InteractionMoveTransformer
         if {'belief_head','team_value'}&set(cfg['model']):
             from .model_efficiency import EfficientMoveTransformer
             model_type=EfficientMoveTransformer
         self.model=model_type(**cfg['model'])
-        self.params=serialization.msgpack_restore(Path(checkpoint).read_bytes())
-        self.forward=jax.jit(lambda s:self.model.apply({'params':self.params},
+        self.params=jax.tree_util.tree_map(j.asarray,
+            serialization.msgpack_restore(Path(checkpoint).read_bytes()))
+        # Weights must be a JIT argument: closing over self.params would keep
+        # using the first compiled checkpoint after a live weight replacement.
+        self._forward=jax.jit(lambda params,s:self.model.apply({'params':params},
             jax.tree_util.tree_map(lambda x:x[None],env.observe(s))))
         self.choose=jax.jit(greedy_one)
         self.observe=jax.jit(env.observe)
@@ -127,6 +131,33 @@ class Policy:
         self.choose(initial,logits[0],context).block_until_ready()
         self.observe(initial).ranks.block_until_ready()
         self.last_bid_diagnostics=None
+
+    def forward(self,state):
+        return self._forward(self.params,state)
+
+    def prepare_params(self,params,config):
+        """Validate and warm new weights without changing the serving policy."""
+        if (config.get('model')!=self.config.get('model') or
+            config.get('ppo',{}).get('gae_clock','public')!=
+            self.config.get('ppo',{}).get('gae_clock','public')):
+            raise ValueError('Checkpoint model or value semantics differ from serving policy')
+        old,structure=jax.tree_util.tree_flatten(self.params)
+        new,new_structure=jax.tree_util.tree_flatten(params)
+        if structure!=new_structure:
+            raise ValueError('Checkpoint parameter tree differs from serving policy')
+        for before,after in zip(old,new):
+            if before.shape!=after.shape or before.dtype!=after.dtype:
+                raise ValueError('Checkpoint parameter shape/dtype differs from serving policy')
+            if not np.all(np.isfinite(after)):
+                raise ValueError('Non-finite checkpoint parameter')
+        params=jax.tree_util.tree_map(j.asarray,params)
+        initial=env.reset(jax.random.PRNGKey(0))
+        for state in (initial,initial._replace(phase=j.int32(1),landlord=j.int32(0))):
+            output=self._forward(params,state)
+            if not all(np.all(np.isfinite(np.asarray(leaf)))
+                       for leaf in jax.tree_util.tree_leaves(output)):
+                raise ValueError('Non-finite checkpoint inference')
+        return params
 
     def decide(self,raw):
         self.last_inference=None

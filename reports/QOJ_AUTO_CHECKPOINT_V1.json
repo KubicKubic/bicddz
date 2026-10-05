@@ -1,0 +1,81 @@
+{
+  "state": "passed",
+  "time": 1791216664.0862098,
+  "policy_kind": "raw",
+  "poll_seconds": 5,
+  "completion_marker": "training/latest.json",
+  "hot_reload_without_worker_restart": true,
+  "parameterized_jit": true,
+  "failed_update_keeps_previous_model": true,
+  "restart_recovers_checksum_bound_active_model": true,
+  "automatic_run_pointer_following": true,
+  "tests": {
+    "passed_unique_checks": 23,
+    "method": "21 checks passed in the initial targeted suite; corrected real JIT replacement check and additional deployed-worker integration check passed in targeted reruns",
+    "files": [
+      "tests/test_qoj_checkpoint_watch.py",
+      "tests/test_api_worker.py",
+      "tests/test_checkpoint_release.py"
+    ]
+  },
+  "cpu": {
+    "state": "passed",
+    "global_step": 74754,
+    "relative_step": 48200,
+    "checkpoint_sha256": "2994b685750d68178e00afb62a6dc3e144178f7204894a6922c77a7aba7ac2ed",
+    "parameters": 5097200,
+    "backend": "cpu",
+    "cold_seconds": 6.27570079639554,
+    "reload_prepare_seconds": 0.07607778161764145,
+    "legal_play_verified": true,
+    "warm_model_decision_seconds": 0.025090542621910572,
+    "forward_jit_cache_unchanged": true,
+    "frozen_release": "v5-74162-de7b5ffdab"
+  },
+  "live": {
+    "pid": 3126578,
+    "state": "passed",
+    "client_version": 9,
+    "global_step": 74754,
+    "relative_step": 48200,
+    "checkpoint_sha256": "2994b685750d68178e00afb62a6dc3e144178f7204894a6922c77a7aba7ac2ed",
+    "accepted_actions": 3,
+    "fallback_decisions": 0,
+    "recoveries": 0,
+    "our_auto": false,
+    "checkpoint_watch_enabled": true,
+    "last_model_update": 1791216588.3915734,
+    "time": 1791216602.1963496
+  },
+  "activated": {
+    "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training",
+    "source_checkpoint": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training/policy_0048200.msgpack",
+    "config_path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training/config.json",
+    "relative_step": 48200,
+    "global_step": 74754,
+    "policy_kind": "raw",
+    "model_signature": {
+      "model": {
+        "action_hidden": 96,
+        "action_width": 48,
+        "attention_backend": "cudnn",
+        "bf16": true,
+        "ff": 1536,
+        "heads": 6,
+        "interaction_width": 64,
+        "layers": 4,
+        "memory_ff": 512,
+        "memory_layers": 3,
+        "width": 192,
+        "wing_rank": 16
+      },
+      "gae_clock": "own"
+    },
+    "checkpoint_sha256": "2994b685750d68178e00afb62a6dc3e144178f7204894a6922c77a7aba7ac2ed",
+    "prepared_at": 1791216588.060915,
+    "prepare_seconds": 0.11300372518599033,
+    "activated_at": 1791216588.3875341
+  },
+  "operating_session": "ddz_qoj_match",
+  "source": "ddz/qoj_checkpoint_watch.py"
+}

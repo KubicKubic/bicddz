@@ -11,6 +11,7 @@ from ddz.api import (APIError,RetryDecision,TemporaryAPIError,Client,run,
 from ddz.api_v5 import Policy
 from ddz.api_recovery import GuardedPolicy
 from ddz.api_dashboard import action_text,clean,public_snapshot
+from ddz.qoj_checkpoint_watch import CheckpointWatcher,resume_paths
 
 root=Path(os.environ.get('DDZ_MATCH_ROOT',Path(__file__).resolve().parent)).resolve()
 cfg=json.loads(Path(os.environ.get('DDZ_DEPLOYMENT_FILE',root/'deployment.json')).read_text())
@@ -71,7 +72,7 @@ if results_path.exists():
         with results_path.open('a') as stream:stream.write('\n')
 
 status={'state':'warming','pid':os.getpid(),'tmux_session':cfg['tmux_session'],
-    'username':cfg['username'],'mode':'match','backend':'cpu','client_version':8,
+    'username':cfg['username'],'mode':'match','backend':'cpu','client_version':9,
     'checkpoint':cfg['source_checkpoint'],'global_step':cfg['global_step'],
     'checkpoint_sha256':cfg['checkpoint_sha256'],'accepted_actions':0,'conflicts':0,
     'games_completed':len(finished_games),'matches_completed':len(finished_matches),
@@ -90,6 +91,8 @@ class LoggedClient(Client):
         event({'event':'recovery','game':game,'error':message})
 
     def request(self,path,payload=None):
+        # Commit only between calls, never during inference or an action POST.
+        if payload is None and isinstance(model,CheckpointWatcher):model.commit_ready()
         started=time.monotonic()
         try:code,data=super().request(path,payload)
         except (APIError,RetryDecision,OSError,urllib.error.URLError,http.client.HTTPException) as error:
@@ -159,7 +162,8 @@ def decision_record(raw,endpoint,payload,source,seconds,reason):
     inference=model.last_inference if source=='model' else None
     record={'event':'decision','game':raw['id'],'version':raw['version'],'endpoint':endpoint,
         'payload':payload,'decision_seconds':seconds,'remaining_ms':raw.get('remaining'),
-        'source':source,'reason':reason,'inference':inference,'time':time.time()}
+        'source':source,'reason':reason,'inference':inference,'time':time.time(),
+        'global_step':cfg['global_step'],'checkpoint_sha256':cfg['checkpoint_sha256']}
     if source=='fallback':
         snapshot=root/f"invalid_state_{raw['id']}_{raw['version']}.json"
         atomic_json(snapshot,public_snapshot(raw))
@@ -178,9 +182,36 @@ def decision_record(raw,endpoint,payload,source,seconds,reason):
         last_decision_seconds=seconds,last_value_by_seat=values)
 
 publish()
+watcher=None
 try:
-    model=Policy(model_dir/'config.json',model_dir/'policy.msgpack')
+    watch=cfg.get('checkpoint_watch')
+    resumed=None
+    config_path,policy_path=model_dir/'config.json',model_dir/'policy.msgpack'
+    if watch:config_path,policy_path,resumed=resume_paths(root,cfg,event)
+    try:
+        model=Policy(config_path,policy_path)
+        if resumed:model.params=model.prepare_params(model.params,json.loads(config_path.read_text()))
+    except Exception as error:
+        if resumed is None:raise
+        event({'event':'model_resume_rejected','error':str(error).replace(token,'[REDACTED]')})
+        model=Policy(model_dir/'config.json',model_dir/'policy.msgpack');resumed=None
     model.capture_observation=True
+    if watch:
+        def activated(metadata):
+            cfg.update({key:metadata[key] for key in
+                ('global_step','relative_step','checkpoint_sha256','source_checkpoint')})
+            cfg.update(policy_kind='raw',active_client_version=9,
+                active_weight_config=metadata['config_path'])
+            atomic_json(root/'deployment.json',cfg)
+            publish(checkpoint=cfg['source_checkpoint'],global_step=cfg['global_step'],
+                relative_step=cfg['relative_step'],checkpoint_sha256=cfg['checkpoint_sha256'],
+                checkpoint_watch_enabled=True,last_model_update=time.time())
+        if resumed:activated(resumed)
+        active=resumed or {'global_step':cfg['global_step']}
+        watcher=CheckpointWatcher(model,root,watch['pointer'],active,activated,event,
+            watch.get('poll_seconds',5)).start()
+        model=watcher
+        publish(checkpoint_watch_enabled=True,checkpoint_pointer=watch['pointer'])
     client=LoggedClient(cfg['base'],token)
     # Startup transient failures reuse the already compiled model too.
     while True:
@@ -197,7 +228,7 @@ try:
             client.on_recovery(error,None)
             time.sleep(error.delay if isinstance(error,TemporaryAPIError) else 1)
     publish(state='ready',server_match_rounds=info['match_rounds'])
-    event({'event':'started','summary':f"{cfg['username']} client=8 CPU V5 step={cfg['global_step']} rounds={info['match_rounds']} warmup completed"})
+    event({'event':'started','summary':f"{cfg['username']} client=9 CPU V5 step={cfg['global_step']} rounds={info['match_rounds']} warmup completed"})
     run(client,GuardedPolicy(model,client,decision_record),mode='match',once=False)
 except Exception as error:
     message=str(error).replace(token,'[REDACTED]')
@@ -205,3 +236,5 @@ except Exception as error:
     event({'event':'failed','error':message})
     if isinstance(error,APIError) and error.code==401:raise SystemExit(78)
     raise
+finally:
+    if watcher is not None:watcher.close()

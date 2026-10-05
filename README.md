@@ -6,6 +6,22 @@
 SHA-256、EMA rollout 计数及原始训练配置。三个 `.msgpack` 使用 Git LFS；克隆后
 先运行 `git lfs install --local`，再运行 `git lfs pull`。上线默认使用 raw policy，EMA 单独保留。
 
+### QOJ 自动跟随 checkpoint
+
+`scripts/qoj_match.sh prepare` 默认启用 `ddz/qoj_checkpoint_watch.py`，每 5 秒
+读取 `runs/production_current.json` 指向的训练目录。训练原子发布 `latest.json`
+后，后台加载对应 raw policy，检查参数结构、形状、dtype、有限值和模型/GAE
+兼容性，并预热叫分与出牌前向。游戏线程在下一次请求或决策前切换权重；
+JIT 将权重作为输入，不重启客户端、不重新匹配、不读取大型完整续训文件。
+加载失败保持原模型，记录 `MODEL_UPDATE_REJECTED`；成功记录
+`MODEL_PREPARED` / `MODEL_ACTIVATED` 及前后 step、SHA-256、加载耗时。
+
+`runs/qoj_match_v1/active_model.json` 保存实际启用的 checkpoint；重启后验证
+并恢复它，损坏时回退冻结发布版本。`deployment.json`、实时面板、每条决策
+记录都会标明实际模型 step。切换训练目录后继续按 global step 单调更新。
+`DDZ_CHECKPOINT_POINTER` 可指定其他训练指针。模型结构变化需要重新部署代码。
+Git 的 `models/` 发布包仍是版本固定的发布制品；实时更新直接读取训练快照。
+
 八卡生产训练从 raw 47600 / global 74154 的完整断点立即切换。
 `configs/cluster8_env2x_batch2x_v1.json` 是用户要求的新配置：65536 环境、
 全局 minibatch 32768，每卡分别 8192 环境和 4096 minibatch，每轮 4194304 个

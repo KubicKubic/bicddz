@@ -14,7 +14,8 @@ case "${1:-status}" in
     exec "$DDZ_PYTHON" -m ddz.qoj_deployment prepare --repo "$DDZ_REPO_ROOT" \
       --root "$DDZ_MATCH_ROOT" --models "${DDZ_MODELS:-$DDZ_REPO_ROOT/models}" \
       --token-file "${DDZ_TOKEN_FILE:-$HOME/.config/ddz/qoj_api_key}" --username "$DDZ_USERNAME" \
-      --base "${DDZ_BASE:-https://qoj.ac/api/v1/doudizhu}" --session "$DDZ_SESSION"
+      --base "${DDZ_BASE:-https://qoj.ac/api/v1/doudizhu}" --session "$DDZ_SESSION" \
+      --checkpoint-pointer "${DDZ_CHECKPOINT_POINTER:-$DDZ_REPO_ROOT/runs/production_current.json}"
     ;;
   start)
     if tmux has-session -t "$DDZ_SESSION" 2>/dev/null; then

@@ -10,7 +10,8 @@ import sys
 from .export_checkpoint import sha, verify_bundle
 
 
-def prepare(repo, root, models, token_file, username, base, session, python):
+def prepare(repo, root, models, token_file, username, base, session, python,
+            checkpoint_pointer=None):
     repo, root, models = (Path(p).resolve() for p in (repo, root, models))
     release = verify_bundle(models)
     sources = sorted(p for p in (repo / 'ddz').rglob('*') if p.is_file() and
@@ -27,10 +28,13 @@ def prepare(repo, root, models, token_file, username, base, session, python):
         'relative_step': release['relative_step'], 'global_step': release['global_step'],
         'checkpoint_sha256': release['files_sha256']['policy.msgpack'],
         'backend': 'cpu', 'automatic_requeue': True, 'once': False,
-        'active_client_version': 8, 'model_dir': str(frozen / 'models'),
+        'active_client_version': 9, 'model_dir': str(frozen / 'models'),
         'active_code': str(frozen / 'code'), 'active_worker': str(frozen / 'worker.py'),
         'active_launcher': str(root / 'launch_current.sh'), 'release': name,
     }
+    if checkpoint_pointer is not None:
+        config['checkpoint_watch']={'pointer':str(Path(checkpoint_pointer).resolve()),
+                                    'poll_seconds':5}
     if frozen.exists():
         existing = json.loads((frozen / 'deployment.json').read_text())
         if existing != config:
@@ -57,6 +61,7 @@ def prepare(repo, root, models, token_file, username, base, session, python):
         f'export DDZ_DEPLOYMENT_FILE={quote(str(frozen / "deployment.json"))}',
         f'export PYTHONPATH={quote(str(frozen / "code"))}',
         "export JAX_PLATFORMS=cpu CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1",
+        'export JAX_COMPILATION_CACHE_DIR="$DDZ_MATCH_ROOT/jax_cpu_cache" JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS=0',
         f'{quote(str(python))} -m ddz.qoj_deployment verify-frozen --release {quote(str(frozen))}',
         f'exec {quote(str(python))} -u -m ddz.api_supervisor --root "$DDZ_MATCH_ROOT" --worker {quote(str(frozen / "worker.py"))}',
         '',
@@ -88,6 +93,7 @@ def main():
     prepare_parser.add_argument('--username', required=True)
     prepare_parser.add_argument('--base', default='https://qoj.ac/api/v1/doudizhu')
     prepare_parser.add_argument('--session', default='ddz_qoj_match')
+    prepare_parser.add_argument('--checkpoint-pointer',type=Path)
     verify_parser = sub.add_parser('verify-frozen')
     verify_parser.add_argument('--release', type=Path, required=True)
     args = ap.parse_args()
@@ -96,7 +102,7 @@ def main():
         print('Frozen deployment verified')
     else:
         config = prepare(args.repo, args.root, args.models, args.token_file, args.username,
-                         args.base, args.session, sys.executable)
+                         args.base, args.session, sys.executable,args.checkpoint_pointer)
         print(json.dumps(config, indent=2))
 
 

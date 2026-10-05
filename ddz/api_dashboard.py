@@ -67,7 +67,7 @@ def model_lines(decision):
     if values:
         value='  '.join(f'S{i}={v:+.3f}' if v is not None else f'S{i}=—' for i,v in enumerate(values))
         label='自身预测 + 阵营比例推导' if infer.get('value_training_clock')=='own' else '预测终局分差'
-        lines=[f"VALUE  {value}  ({label}；局 {infer.get('game')} / v{infer.get('version')} 决策前)"]
+        lines=[f"VALUE  {value}  ({label}；局 {infer.get('game')} / v{infer.get('version')} / step {decision.get('global_step','—')} 决策前)"]
     else:lines=['VALUE  等待首次模型决策；兜底动作不伪造 value']
     if view:
         unseen=' '.join(f'{rank}:{round(row[5]*4)}' for rank,row in zip(RANKS,view['ranks']) if row[5])

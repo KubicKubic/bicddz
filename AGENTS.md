@@ -39,7 +39,7 @@ The session is `ddz_qoj_match`; deployment and live status are under
 under `releases/`. `prepared_deployment.json` records the next prepared release;
 `deployment.json` records the release actually verified live. Inspect both and
 the active process before restarting. The portable worker is `deploy/qoj/worker.py`
-(client version 8); older V7 files remain historical recovery artifacts.
+(client version 9); older V7/V8 files remain historical recovery artifacts.
 The fixed raw V5 policy uses CPU inference. The launcher sources the
 deployment's private `network.env`: the long-lived tmux server does not inherit
 the editing process's proxy variables automatically. Respect its account lock
@@ -59,6 +59,17 @@ The supervisor restarts its owned worker on process exit or stale progress;
 authentication rejection or account-lock conflict stops for inspection.
 
 Canonicalize all masked history padding to zero so absolute cyclic seat labels leave the complete Observation identical. In the own-seat GAE deployment, only display the acting player's trained value directly; derive other final scores from the known team payout ratio, and hide their scores before landlord selection. Do not treat the raw other critic heads as independently supervised values.
+
+User requires every new completed checkpoint to replace the live raw model.
+V9's `ddz/qoj_checkpoint_watch.py` polls `runs/production_current.json` every
+5 seconds, follows the atomic `latest.json` completion marker, and loads/checks/
+warms weights in a background thread. Commit prepared weights only between
+requests or decisions using a parameterized JIT; never restart for each
+checkpoint. Keep the prior model on failure and record updates in events and
+console logs. `active_model.json` is the persisted, checksum-bound last accepted
+model, restored after worker restart; `deployment.json` and decision records
+identify the actual serving step. Preserve immutable frozen code and old
+releases, and do not alter the running trainer's frozen dependencies.
 
 ## User-directed environment and PPO batch doubling (2026-10-05)
 
