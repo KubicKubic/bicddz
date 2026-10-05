@@ -1,0 +1,21 @@
+{
+  "family": "V5",
+  "policy_kind": "raw",
+  "relative_step": 47608,
+  "global_step": 74162,
+  "parameters": 5097200,
+  "ema_decay": 0.999,
+  "ema_rollout_updates": 8608,
+  "optimizer_step": 4670200,
+  "training_config": "config.json",
+  "raw_policy": "policy.msgpack",
+  "ema_policy": "ema_policy.msgpack",
+  "resume_checkpoint": "latest_checkpoint.msgpack",
+  "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training",
+  "files_sha256": {
+    "config.json": "83f7ddd1faca408cfadd5e62c342ec926d84b09ab446929dee0c38f166b2fa16",
+    "policy.msgpack": "13f00409f656d1ad07ed129878c9cfd26ffc7eaac940fa3afa6727bf76f6954b",
+    "ema_policy.msgpack": "3607f104386bb1e0a55ffe85c0b30797a92d3bf582be8f18d4f4250ed4bd6807",
+    "latest_checkpoint.msgpack": "eb6eaab8d92970d1b0d3dcf8c2dc893a0710f886d42f0fbbc9885b47cf625eed"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "baseline": "DouZero ResNet 2.0 publisher BEST",
+  "manifest": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/douzero_resnet_2_0_reference/manifest.json",
+  "repository": "https://github.com/EdwardPooh/douzero-resnet-2.0",
+  "commit": "85afd773abd01c411f543d6ade5b99a4fde327d2",
+  "replaced_original_ADP_WP": true,
+  "completed_retest": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/a100_compact_complete_move_v4/resnet2_best_step39811_all_roles_1024_v1/comparison.json",
+  "time": 1790851264.5810373,
+  "checkpoint_step": 39811
+}

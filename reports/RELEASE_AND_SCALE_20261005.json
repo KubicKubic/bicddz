@@ -1,0 +1,61 @@
+{
+  "release": {
+    "family": "V5",
+    "policy_kind": "raw",
+    "relative_step": 47608,
+    "global_step": 74162,
+    "parameters": 5097200,
+    "ema_decay": 0.999,
+    "ema_rollout_updates": 8608,
+    "optimizer_step": 4670200,
+    "training_config": "config.json",
+    "raw_policy": "policy.msgpack",
+    "ema_policy": "ema_policy.msgpack",
+    "resume_checkpoint": "latest_checkpoint.msgpack",
+    "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training",
+    "files_sha256": {
+      "config.json": "83f7ddd1faca408cfadd5e62c342ec926d84b09ab446929dee0c38f166b2fa16",
+      "policy.msgpack": "13f00409f656d1ad07ed129878c9cfd26ffc7eaac940fa3afa6727bf76f6954b",
+      "ema_policy.msgpack": "3607f104386bb1e0a55ffe85c0b30797a92d3bf582be8f18d4f4250ed4bd6807",
+      "latest_checkpoint.msgpack": "eb6eaab8d92970d1b0d3dcf8c2dc893a0710f886d42f0fbbc9885b47cf625eed"
+    }
+  },
+  "resize_state": "eight_gpu_verified_and_running",
+  "queue_id": "01791198669925432962-d3d020a06b174ab3873cc18c58002e0e",
+  "cpu_verification": {
+    "passed": true,
+    "tests": "11 targeted migration/worker tests passed",
+    "real_checkpoint_iteration": 47500,
+    "real_global_envs": 65536,
+    "real_global_minibatch": 32768,
+    "weights_adam_rng_existing_envs_ema_bit_exact": true,
+    "msgpack_roundtrip_bit_exact": true,
+    "fresh_environment_streams": "fold_in(saved rank key, independent stream domain, iteration, rank)",
+    "source_checkpoint_sha256": "f4f529ad72e489d3e83157f53b88ecb066c0d722d30618c199d90da44476884c",
+    "time": 1791198511.979194
+  },
+  "resource_gate": {
+    "source_peak_bytes": 11933988096,
+    "estimated_peak_bytes": 32457910784,
+    "hardware_evidence": "active queue log: eight NVIDIA A100-SXM4-80GB and real NCCL nranks=8",
+    "remote_capacity_free_memory_check_required": true
+  },
+  "source_boundary": 48000,
+  "git_remote": "https://github.com/KubicKubic/bicddz.git",
+  "time": 1791198899.3886428,
+  "live_deployment": {
+    "state": "verified_live",
+    "client_version": 8,
+    "global_step": 74162,
+    "relative_step": 47608,
+    "checkpoint_sha256": "13f00409f656d1ad07ed129878c9cfd26ffc7eaac940fa3afa6727bf76f6954b",
+    "pid": 3002751,
+    "accepted_actions": 7,
+    "fallback_decisions": 0,
+    "recoveries": 0,
+    "our_auto": false,
+    "time": 1791200585.9010963
+  },
+  "latest_resize_proof": "RESIZE_IMMEDIATE_20261005.json",
+  "git_authentication": "External id_ed25519_bicddz; SSH over HTTP CONNECT proxy"
+}

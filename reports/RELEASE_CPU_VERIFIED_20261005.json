@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "global_step": 74054,
+  "policy_sha256": "d741ac8e802235f736aa4a4a85cb867b0956423d4b74c931697b8136c9f18d8f",
+  "warmup_seconds": 6.119545763358474,
+  "decision_seconds": 0.1321022715419531,
+  "legal_complete_move": true,
+  "fixture": "qoj_redeal_landlord_reset_26894.json",
+  "own_value": -0.3881428837776184,
+  "time": 1791198813.0240927
+}

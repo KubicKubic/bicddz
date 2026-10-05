@@ -1,0 +1,145 @@
+{
+  "id": 26894,
+  "version": 6,
+  "phase": "playing",
+  "seat": 0,
+  "turn": 0,
+  "hand": [
+    3,
+    7,
+    8,
+    9,
+    12,
+    17,
+    20,
+    22,
+    33,
+    35,
+    36,
+    39,
+    41,
+    45,
+    46,
+    48,
+    52
+  ],
+  "bottom": [
+    16,
+    26,
+    38
+  ],
+  "landlord": 1,
+  "bid": 3,
+  "bombs": 0,
+  "redeals": 0,
+  "leading": false,
+  "last": {
+    "seat": 2,
+    "pattern": {
+      "type": "pair",
+      "rank": 3,
+      "len": 1
+    }
+  },
+  "must_bid": false,
+  "players": [
+    {
+      "count": 17,
+      "auto": false
+    },
+    {
+      "count": 18,
+      "auto": false
+    },
+    {
+      "count": 15,
+      "auto": false
+    }
+  ],
+  "log": [
+    {
+      "seat": 2,
+      "kind": "bid",
+      "value": 0,
+      "auto": false,
+      "t": 1791106476758
+    },
+    {
+      "seat": 0,
+      "kind": "bid",
+      "value": 0,
+      "auto": false,
+      "t": 1791106477598
+    },
+    {
+      "seat": 1,
+      "kind": "bid",
+      "value": 0,
+      "auto": false,
+      "t": 1791106490499
+    },
+    {
+      "kind": "redeal",
+      "t": 1791106490499
+    },
+    {
+      "seat": 1,
+      "kind": "auto_on",
+      "timeout": true,
+      "t": 1791106505499
+    },
+    {
+      "seat": 1,
+      "kind": "bid",
+      "value": 3,
+      "auto": true,
+      "t": 1791106505499
+    },
+    {
+      "seat": 1,
+      "kind": "landlord",
+      "value": 3,
+      "cards": [
+        16,
+        26,
+        38
+      ],
+      "t": 1791106505499
+    },
+    {
+      "seat": 1,
+      "kind": "play",
+      "cards": [
+        5,
+        6
+      ],
+      "pattern": {
+        "type": "pair",
+        "rank": 1,
+        "len": 1
+      },
+      "auto": true,
+      "t": 1791106506699
+    },
+    {
+      "seat": 1,
+      "kind": "auto_off",
+      "t": 1791106511482
+    },
+    {
+      "seat": 2,
+      "kind": "play",
+      "cards": [
+        13,
+        14
+      ],
+      "pattern": {
+        "type": "pair",
+        "rank": 3,
+        "len": 1
+      },
+      "auto": false,
+      "t": 1791106532901
+    }
+  ]
+}

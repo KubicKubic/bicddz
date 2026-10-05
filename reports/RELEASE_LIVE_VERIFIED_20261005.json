@@ -1,0 +1,13 @@
+{
+  "state": "verified_live",
+  "client_version": 8,
+  "global_step": 74162,
+  "relative_step": 47608,
+  "checkpoint_sha256": "13f00409f656d1ad07ed129878c9cfd26ffc7eaac940fa3afa6727bf76f6954b",
+  "pid": 3002751,
+  "accepted_actions": 7,
+  "fallback_decisions": 0,
+  "recoveries": 0,
+  "our_auto": false,
+  "time": 1791200585.9010963
+}

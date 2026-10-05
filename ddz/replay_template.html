@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>斗地主对局回放</title>
+  <style>
+    :root { color-scheme: dark; --bg:#08130f; --felt:#174f3b; --felt2:#0e352a; --gold:#e7c982; --text:#f6f1df; --muted:#aec3b2; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 50% -20%,#2c5440 0,#0b2119 42%,var(--bg) 78%); color:var(--text); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    .shell { max-width:1280px; margin:auto; padding:22px 24px 36px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:17px; }
+    .back { color:var(--gold); text-decoration:none; font-weight:700; }
+    .topbar .meta { color:var(--muted); font-size:12px; text-align:right; }
+    h1 { font:700 clamp(30px,4vw,50px)/1.1 Georgia,"Noto Serif SC",serif; margin:0 0 8px; letter-spacing:.02em; }
+    .intro { color:var(--muted); margin:0 0 20px; }
+    .stage { position:relative; min-height:650px; overflow:hidden; border:1px solid #5b7b5d; border-radius:28px; box-shadow:0 32px 80px #0008,inset 0 0 0 8px #103c2c; background:radial-gradient(ellipse at 50% 43%,#287459 0%,var(--felt) 42%,var(--felt2) 93%); display:grid; grid-template-columns:minmax(205px,1fr) minmax(300px,1.4fr) minmax(205px,1fr); grid-template-rows:115px 360px 175px; }
+    .stage:before { content:""; position:absolute; inset:15% 17%; border:2px solid #d0b77435; border-radius:50%; pointer-events:none; }
+    .stage:after { content:"DDZ"; position:absolute; left:50%; top:46%; transform:translate(-50%,-50%); font:700 112px Georgia,serif; color:#e2cb8210; pointer-events:none; }
+    .hud { grid-column:1/4; grid-row:1; z-index:2; display:flex; align-items:start; justify-content:space-between; gap:12px; padding:26px 32px; }
+    .hud .label { font-size:11px; font-weight:800; color:#d4e7c9; letter-spacing:.22em; text-transform:uppercase; }
+    .hud .stats { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .stat { padding:7px 12px; border:1px solid #d5c99555; border-radius:999px; background:#0c2d22aa; white-space:nowrap; color:#e7efdb; font-size:12px; }
+    .stat b { color:var(--gold); }
+    .seat { z-index:2; min-width:0; margin:8px 12px; padding:17px; border:1px solid #afccad44; border-radius:19px; background:#0b2a22d9; box-shadow:0 14px 32px #00160f88; transition:border-color .25s,box-shadow .25s,transform .25s; }
+    .seat.active { border-color:var(--gold); box-shadow:0 0 0 2px #e6c87855,0 14px 32px #00160f88; transform:translateY(-2px); }
+    .seat.bot { background:#153b2bd9; }
+    .seat.left { grid-column:1; grid-row:2; align-self:center; }
+    .seat.right { grid-column:3; grid-row:2; align-self:center; }
+    .seat.bottom { grid-column:1/4; grid-row:3; width:min(900px,calc(100% - 60px)); justify-self:center; align-self:start; }
+    .seat-head { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
+    .avatar { display:grid; place-items:center; flex:none; width:34px; height:34px; border-radius:50%; color:#163b2a; font-weight:900; background:var(--gold); }
+    .seat-name { font-size:15px; font-weight:800; }
+    .role { margin-left:auto; padding:3px 8px; border-radius:99px; font-size:11px; color:#cce5cb; background:#3a614a; white-space:nowrap; }
+    .role.landlord { color:#392512; background:#f4ce83; }
+    .bot-mark { color:#f8d482; font-size:11px; font-weight:800; }
+    .count { color:#a9c5b2; font-size:12px; margin:-4px 0 8px; }
+    .cards { display:flex; flex-wrap:wrap; align-content:start; gap:4px; min-height:57px; }
+    .card { width:34px; height:49px; display:flex; align-items:flex-start; justify-content:flex-start; padding:5px 4px; border-radius:5px; background:#faf5e9; color:#162b25; border:1px solid #fff; box-shadow:0 2px 3px #0006; font:700 15px/1 Georgia,serif; white-space:nowrap; }
+    .card.joker { color:#bb3833; font-size:10px; writing-mode:vertical-rl; }
+    .card.back { background:repeating-linear-gradient(45deg,#24455a,#24455a 5px,#345d74 5px,#345d74 10px); border-color:#c2d2c8; color:transparent; }
+    .center { z-index:2; grid-column:2; grid-row:2; align-self:center; justify-self:stretch; text-align:center; padding:12px; }
+    .center-title { color:#cde1cb; font-size:12px; letter-spacing:.16em; font-weight:800; margin:0 0 12px; }
+    .pile { min-height:78px; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:3px; padding:8px 0; }
+    .pile .card { width:37px; height:53px; }
+    .pile-caption { color:var(--gold); font-size:16px; font-weight:800; margin-top:4px; min-height:24px; }
+    .bottom-cards { margin:14px auto 0; display:flex; justify-content:center; align-items:center; gap:5px; color:#d9e8d8; font-size:12px; }
+    .bottom-cards .card { width:27px; height:38px; font-size:12px; }
+    .event-line { min-height:76px; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .event-pill { border:1px solid #d7bd7e77; border-radius:999px; padding:7px 12px; background:#09271fcc; color:#f7e9c9; font-weight:600; }
+    .event-pill .actor { color:var(--gold); margin-right:6px; }
+    .outcome { display:none; position:absolute; z-index:5; inset:0; align-items:center; justify-content:center; background:#06180dcc; backdrop-filter:blur(5px); }
+    .outcome.visible { display:flex; }
+    .outcome-card { width:min(520px,90%); text-align:center; border:1px solid #eed18e; border-radius:24px; padding:34px; background:#173a2e; box-shadow:0 25px 80px #000b; }
+    .outcome-card h2 { font:700 42px Georgia,"Noto Serif SC",serif; color:var(--gold); margin:8px 0 18px; }
+    .score-row { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+    .score-row span { border:1px solid #718a73; border-radius:12px; padding:8px 12px; background:#0e2a21; }
+    .controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; padding:17px 20px; border:1px solid #315645; border-radius:19px; background:#0c251c; }
+    button,select { border:1px solid #53755c; border-radius:11px; background:#214a35; color:#f7f3e7; padding:10px 14px; font:700 14px system-ui,sans-serif; cursor:pointer; }
+    button:hover,select:hover { border-color:var(--gold); }
+    button.primary { background:#e9c981; border-color:#e9c981; color:#18352a; min-width:88px; }
+    input[type=range] { flex:1; min-width:160px; accent-color:#e9c981; }
+    .counter { color:#b5c9b7; font-variant-numeric:tabular-nums; min-width:85px; text-align:right; }
+    .note { color:#91ac9c; font-size:12px; margin:13px 3px 0; }
+    @media(max-width:850px) { .shell { padding:15px 12px 30px; } .stage { grid-template-columns:1fr 1fr; grid-template-rows:auto auto auto auto; min-height:0; } .hud { grid-column:1/3; grid-row:1; padding:20px; } .seat.left { grid-column:1; grid-row:2; } .seat.right { grid-column:2; grid-row:2; } .center { grid-column:1/3; grid-row:3; min-height:220px; } .seat.bottom { grid-column:1/3; grid-row:4; width:calc(100% - 24px); margin-bottom:16px; } .stage:before { inset:32% 18%; } }
+    @media(max-width:550px) { .hud { display:block; } .hud .stats { justify-content:flex-start; margin-top:8px; } .seat { margin:5px; padding:10px; } .seat-name { font-size:13px; } .card { width:27px; height:40px; font-size:12px; } .center { padding:18px 5px; } .topbar .meta { display:none; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar"><a class="back" href="index.html">← 十局总览</a><div class="meta" id="modeMeta"></div></div>
+    <h1 id="title"></h1><p class="intro" id="subtitle"></p>
+    <section class="stage" aria-label="斗地主对局动画">
+      <div class="hud"><div><div class="label">LOCAL MATCH REPLAY</div><div id="phaseLabel">准备发牌</div></div><div class="stats"><div class="stat">底分 <b id="bid">—</b></div><div class="stat">炸弹 <b id="bombs">0</b></div><div class="stat">重新发牌 <b id="redeals">0</b></div></div></div>
+      <div class="seat left" id="seat1"></div><div class="seat right" id="seat2"></div><div class="seat bottom" id="seat0"></div>
+      <div class="center"><div class="center-title">当前牌桌</div><div class="pile" id="pile"></div><div class="pile-caption" id="pileCaption"></div><div class="bottom-cards" id="bottomCards"></div><div class="event-line" id="eventLine"></div></div>
+      <div class="outcome" id="outcome"><div class="outcome-card"><div class="label">对局结束</div><h2 id="winner"></h2><div class="score-row" id="scoreRow"></div><p id="botResult"></p><button id="replayButton">从头重播</button></div></div>
+    </section>
+    <div class="controls"><button class="primary" id="playButton" aria-label="播放或暂停">暂停</button><button id="prevButton" aria-label="上一步">←</button><button id="nextButton" aria-label="下一步">→</button><input type="range" id="progress" min="0" value="0" aria-label="回放进度"><span class="counter" id="counter"></span><select id="speed" aria-label="播放速度"><option value="1600">0.5×</option><option value="850" selected>1×</option><option value="420">2×</option><option value="220">4×</option></select><button id="revealButton">隐藏对手手牌</button></div>
+    <p class="note" id="usageNote"></p>
+  </main>
+  <script>
+    const game = __GAME_DATA__;
+    const ranks = ['3','4','5','6','7','8','9','10','J','Q','K','A','2','小王','大王'];
+    const frames = game.frames;
+    let index = 0, playing = true, reveal = true, timer = null;
+    const $ = id => document.getElementById(id);
+    $('title').textContent = `第 ${game.number} 局 · 斗地主`;
+    const selfplay = game.mode === 'selfplay';
+    $('modeMeta').textContent = selfplay?'本地模拟 · 三个座位均为同一模型 · 非线上对局':'本地模拟 · 模型快照 vs 固定启发式 · 非线上对局';
+    $('usageNote').textContent = `按空格播放／暂停，左右方向键逐步查看。回放为已结束对局，默认明牌；切换隐藏后仅显示${selfplay?'观察座位':'模型'}手牌。牌面只记录点数和张数，不虚构花色。`;
+    $('subtitle').textContent = `${selfplay?'全模型自对弈 · 观察':'模型执'}座位 ${game.bot_seat} · ${game.events} 个公开事件 · ${game.decisions} 次内部决策`;
+    $('progress').max = String(frames.length - 1);
+    function cards(counts, hidden=false) {
+      let html = '';
+      for (let rank=0;rank<15;rank++) for (let n=0;n<counts[rank];n++)
+        html += `<span class="card ${hidden?'back':''} ${rank>=13?'joker':''}">${hidden?'◆':ranks[rank]}</span>`;
+      return html || '<span style="color:#c6d8c7">已出完</span>';
+    }
+    function seat(frame, id) {
+      const node = $('seat'+id), bot = id===game.bot_seat, landlord = frame.landlord===id;
+      const active = !frame.done && frame.turn===id;
+      node.classList.toggle('active', active); node.classList.toggle('bot', bot);
+      const count = frame.hands[id].reduce((a,b)=>a+b,0);
+      node.innerHTML = `<div class="seat-head"><span class="avatar">${id}</span><span class="seat-name">座位 ${id}</span>${selfplay?`<span class="bot-mark">模型${bot?' · 观察位':''}</span>`:bot?'<span class="bot-mark">模型</span>':''}<span class="role ${landlord?'landlord':''}">${frame.landlord<0?'叫分中':landlord?'地主':'农民'}</span></div><div class="count">剩余 ${count} 张${active?' · 当前行动':''}</div><div class="cards">${cards(frame.hands[id],!reveal&&!bot)}</div>`;
+    }
+    function currentPile(frame) {
+      if (frame.last===0) return null;
+      for (let i=index;i>=0;i--) {
+        for (let k=frames[i].events.length-1;k>=0;k--)
+          if (frames[i].events[k].kind===3) return frames[i].events[k];
+      }
+      return null;
+    }
+    function render() {
+      const frame = frames[index];
+      $('phaseLabel').textContent = frame.done?'本局结束':frame.phase===0?'叫分阶段':'出牌阶段';
+      $('bid').textContent = frame.bid || '—'; $('bombs').textContent=frame.bombs; $('redeals').textContent=frame.redeals;
+      for (let id=0;id<3;id++) seat(frame,id);
+      const pile=currentPile(frame);
+      $('pile').innerHTML=pile?cards(pile.cards):'<span style="color:#d1e5d4">等待出牌</span>';
+      $('pileCaption').textContent=pile?`座位 ${pile.seat} · ${pile.type}`:'';
+      $('bottomCards').innerHTML=frame.landlord<0?'底牌尚未揭示':`底牌 ${cards(frame.bottom)}`;
+      $('eventLine').innerHTML=frame.events.length?frame.events.map(e=>`<span class="event-pill"><span class="actor">座位 ${e.seat}</span>${e.text}</span>`).join(''):'<span class="event-pill">开局发牌</span>';
+      $('counter').textContent=`${index+1} / ${frames.length}`; $('progress').value=index;
+      $('outcome').classList.toggle('visible',frame.done);
+      if(frame.done) {
+        $('winner').textContent=`${game.winner}获胜`;
+        $('scoreRow').innerHTML=frame.score.map((x,i)=>`<span>座位 ${i}　${x>=0?'+':''}${x}</span>`).join('');
+        $('botResult').textContent=`${selfplay?'观察座位':'模型'}原始积分 ${game.bot_score>=0?'+':''}${game.bot_score}`;
+      }
+      $('playButton').textContent=playing?'暂停':'播放';
+    }
+    function pause() { playing=false; if(timer) clearTimeout(timer); timer=null; render(); }
+    function schedule() { if(timer) clearTimeout(timer); if(!playing) return; timer=setTimeout(()=>{if(index<frames.length-1){index++;render();schedule();}else pause();},Number($('speed').value)); }
+    function go(next) { index=Math.max(0,Math.min(frames.length-1,next)); render(); if(index===frames.length-1) pause(); else if(playing) schedule(); }
+    $('playButton').onclick=()=>{ if(playing) pause(); else {if(index===frames.length-1) index=0; playing=true;render();schedule();} };
+    $('prevButton').onclick=()=>go(index-1); $('nextButton').onclick=()=>go(index+1);
+    $('progress').oninput=e=>go(Number(e.target.value)); $('speed').onchange=()=>schedule();
+    $('revealButton').onclick=()=>{reveal=!reveal;$('revealButton').textContent=reveal?'隐藏对手手牌':'显示全部手牌';render();};
+    $('replayButton').onclick=()=>{index=0;playing=true;render();schedule();};
+    document.addEventListener('keydown',e=>{if(['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName))return;if(e.code==='Space'){e.preventDefault();$('playButton').click();}if(e.code==='ArrowRight')go(index+1);if(e.code==='ArrowLeft')go(index-1);});
+    render(); schedule();
+  </script>
+</body>
+</html>
