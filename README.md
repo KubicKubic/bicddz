@@ -4,7 +4,7 @@
 
 `models/release.json` 标明此次发布的 raw、EMA 和完整续训 checkpoint 的 step、
 SHA-256、EMA rollout 计数及原始训练配置。三个 `.msgpack` 使用 Git LFS；克隆后
-先运行 `git lfs pull`。上线默认使用 raw policy，EMA 单独保留。
+先运行 `git lfs install --local`，再运行 `git lfs pull`。上线默认使用 raw policy，EMA 单独保留。
 
 八卡生产训练从 raw 47600 / global 74154 的完整断点立即切换。
 `configs/cluster8_env2x_batch2x_v1.json` 是用户要求的新配置：65536 环境、
@@ -294,6 +294,7 @@ Fortune 已连接 QOJ 真实计分比赛，持续 tmux 运行。使用以下可�
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements-cpu.txt
+git lfs install --local
 git lfs pull
 # 将自己的 key 写入 ~/.config/ddz/qoj_api_key，权限设为 0600。
 DDZ_USERNAME=YOUR_USERNAME scripts/qoj_match.sh prepare
