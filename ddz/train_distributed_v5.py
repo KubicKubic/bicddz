@@ -43,6 +43,31 @@ def source_template_key(source_key,resuming):
     raise ValueError('Source RNG requires one key or eight keys with explicit resume')
 
 
+def restore_arena(saved,cfg,ranks=8):
+    """Restore resident states without dealing and discarding 65K new hands."""
+    n=cfg['envs'];b=cfg['per_gpu_envs']
+    if n!=ranks*b:raise ValueError('Saved environment partition differs')
+    expected=jax.eval_shape(lambda:env.reset(jax.random.PRNGKey(0)))
+    if set(saved['env'])!=set(expected._fields):raise ValueError('Saved environment schema differs')
+    for name,template in zip(expected._fields,expected):
+        value=np.asarray(saved['env'][name])
+        if value.shape!=(n,)+template.shape or value.dtype!=template.dtype:
+            raise ValueError('Saved environment shape/dtype differs: '+name)
+    key=np.asarray(saved['key'])
+    if key.shape!=(ranks,2) or key.dtype!=np.uint32:
+        raise ValueError('Saved per-rank RNG shape/dtype differs')
+    if (np.any((saved['env']['hist_len']<0)|(saved['env']['hist_len']>env.HISTORY)) or
+        np.any((saved['env']['turn']<0)|(saved['env']['turn']>=3))):
+        raise ValueError('Saved history length or turn is out of range')
+    a=saved['runtime']['arena'];fields=('pool_id','focus','complement','use_pool')
+    if set(a)!=set(fields):raise ValueError('Saved arena schema differs')
+    for name in fields:
+        value=np.asarray(a[name]);dtype=np.bool_ if name in ('complement','use_pool') else np.int32
+        if value.shape!=(n,) or value.dtype!=dtype:raise ValueError('Saved arena shape/dtype differs: '+name)
+    games=shard_env(env.State(**saved['env']),ranks)
+    return ArenaState(games,*[j.asarray(a[k]).reshape((ranks,b)) for k in fields]),j.asarray(key)
+
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True)
     ap.add_argument('--source',type=Path,required=True);ap.add_argument('--out',type=Path,required=True)
@@ -85,11 +110,7 @@ def main():
     start=0
     if saved:
         ts=serialization.from_state_dict(ts,saved['train']);runtime=saved['runtime'];start=int(saved['iteration'])
-        flat=serialization.from_state_dict(env.batch_reset(jax.random.split(base_key,cfg['envs'])),saved['env'])
-        games=shard_env(flat,8);keys=j.asarray(saved['key']);a=runtime['arena']
-        arena=ArenaState(games,*[j.asarray(a[k]).reshape((8,b)) for k in ('pool_id','focus','complement','use_pool')])
-        if games.turn.shape!=(8,b) or keys.shape!=(8,2):
-            raise ValueError('Migrated environment or random-stream shape differs')
+        arena,keys=restore_arena(saved,cfg)
     else:
         initial=env.batch_reset(jax.random.split(jax.random.PRNGKey(cfg['seed']),b))
         original=serialization.from_state_dict(initial,source['env'])
@@ -106,6 +127,12 @@ def main():
                                   precision_modes=('bf16',))
         runtime['v6_cuda_source_function_probe']=cuda_probe
         print(json.dumps({'v6_cuda_source_function_probe':cuda_probe,'backend':jax.default_backend()}),flush=True)
+        from .v6_preflight import training_signatures
+        signatures=training_signatures(model,ts.params,cfg)
+        runtime['v6_cuda_training_signatures']=signatures
+        print(json.dumps({'v6_cuda_training_signatures':signatures}),flush=True)
+        # Probe executables must not inflate the sustained training footprint.
+        jax.clear_caches()
     ts=jax.device_put_replicated(ts,devices)
     ema_decay=validate_decay(cfg.get('ema_decay',0.999))
     saved_ema=saved.get('ema') if saved else None

@@ -27,7 +27,9 @@ from .train_v3 import balanced_vf_coefficient
 def create(cfg,source):
     model=EfficientMoveTransformer(**cfg['model'])
     one=env.batch_reset(jax.random.split(jax.random.PRNGKey(cfg['seed']),1))
-    target=model.init(jax.random.PRNGKey(cfg['seed']+1),jax.vmap(env.observe)(one))['params']
+    # Parameter shapes are independent of history length. Avoid initializing a
+    # full-history executable merely to obtain the resume tree template.
+    target=model.init(jax.random.PRNGKey(cfg['seed']+1),jax.vmap(env.observe)(one),memory_length=4)['params']
     if cfg.get('model_family')=='V6' and cfg['model']!=source['config']['model']:
         from .upgrade_v6 import grow_parameters, grow_births, inherited_births
         params=grow_parameters(target,source['train']['params'],source['config']['model'],cfg['model'])
@@ -40,8 +42,13 @@ def create(cfg,source):
             if key not in flat or value.shape!=flat[key].shape:raise ValueError(f'base architecture changed {key}')
             flat[key]=j.asarray(value)
         params=unflatten_dict(flat)
-        births=(source['runtime']['coordinate_births'] if 'coordinate_births' in source['runtime'] else
-            coordinate_births(params,source['train']['params'],source['runtime'].get('optimizer_origin'),int(source['train']['step'])))
+        if 'coordinate_births' in source['runtime']:
+            from .upgrade_v6 import grow_births,inherited_births
+            births=grow_births(params,source['train']['params'],
+                inherited_births(source['train']['params'],source['runtime']),int(source['train']['step']))
+        else:
+            births=coordinate_births(params,source['train']['params'],
+                source['runtime'].get('optimizer_origin'),int(source['train']['step']))
     p=cfg['ppo']
     # Keep the original Adam/decay/schedule state schema for exact migration.
     # The actual learning rate is passed by fresh-data progress to make_update.

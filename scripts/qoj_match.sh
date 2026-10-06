@@ -18,6 +18,10 @@ case "${1:-status}" in
       --checkpoint-pointer "${DDZ_CHECKPOINT_POINTER:-$DDZ_REPO_ROOT/runs/production_current.json}"
     ;;
   start)
+    if [[ -f "$DDZ_MATCH_ROOT/OFFLINE.json" && "${DDZ_QOJ_ENABLE_ONLINE:-0}" != 1 ]]; then
+      echo 'QOJ is disabled by the user; do not restart until the user requests online play.'
+      exit 77
+    fi
     if tmux has-session -t "$DDZ_SESSION" 2>/dev/null; then
       echo "Session $DDZ_SESSION already exists; attach or inspect it before restarting."
       exit 1

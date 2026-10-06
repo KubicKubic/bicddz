@@ -3,7 +3,7 @@
 Successful production chunks append their next bounded chunk through the queue
 helper. Failed chunks never retry. No bridge commands or unrelated tasks change.
 """
-import argparse,hashlib,json,os,re,shlex,subprocess,sys,time
+import argparse,hashlib,json,math,os,re,shlex,subprocess,sys,time
 from pathlib import Path
 
 
@@ -28,6 +28,7 @@ def main():
     task_id=os.environ['Q_SCHEDULER_QUEUE_TASK_ID'];log=phase/(task_id+'.log')
     cfg=read(phase/'config.json')
     start_iteration=read(phase/'training'/'latest.json')['iteration'] if args.resume else 0
+    if args.steps<=start_iteration:raise RuntimeError('Continuation must contain fresh rollout rounds')
     argv=[sys.executable,'-u','-m','ddz.train_distributed_v5','--config',str(phase/'config.json'),
           '--source',str(phase/'source.msgpack'),'--out',str(phase/'training'),'--steps',str(args.steps)]
     if args.resume:argv.append('--resume')
@@ -52,8 +53,11 @@ def main():
     rows=[json.loads(x) for x in (phase/'training'/'metrics.jsonl').read_text().splitlines()]
     current=[r for r in rows if r['iteration']>start_iteration]
     expected_decisions=cfg['envs']*cfg['horizon']
-    if rows[-1]['iteration']!=args.steps or any(r['invalid_actions'] or r['nonfinite'] or
-        r['nranks']!=8 or r['fresh_decisions']!=expected_decisions or r.get('replica_parameter_max_difference',0)!=0 for r in current):
+    if ([r['iteration'] for r in current]!=list(range(start_iteration+1,args.steps+1)) or
+        any(r['invalid_actions'] or r['nonfinite'] or
+        r['nranks']!=8 or r['fresh_decisions']!=expected_decisions or
+        r.get('replica_parameter_max_difference',0)!=0 or r.get('ema_replica_parameter_max_difference',0)!=0 or
+        not all(isinstance(v,(int,float)) and math.isfinite(v) for v in r.values()) for r in current)):
         raise RuntimeError('Eight-GPU scale/health/synchronization gate failed')
     warm=[r for r in current if r['iteration']>current[0]['iteration']+3]
     if not warm:warm=current

@@ -5,6 +5,7 @@ remaining-card features; context-dependent wing combinations. A V4 warm start
 preserves its function by zeroing new residual paths and growing FFNs silently.
 """
 import numpy as np
+from functools import partial
 import flax.linen as nn
 import jax
 import jax.numpy as j
@@ -35,6 +36,10 @@ def expanded_attention(model,query,key,mask,index,prefix,dtype,attention_fn,memo
     order. Separate banks retain the exact mature computations and temperature.
     Every head still attends to the complete unmasked sequence.
     """
+    # Query and key lengths can coincide for cross attention (15 events plus
+    # the null token). Shape equality cannot identify history self attention.
+    if attention_fn is fused_full_attention:
+        attention_fn=partial(attention_fn,query_is_memory=memory)
     options=model.attention_options(memory)
     inherited=model.inherited_memory_layers if memory else model.inherited_layers
     if inherited and index<inherited and options['qkv_features']>model.width:
@@ -51,7 +56,7 @@ def expanded_attention(model,query,key,mask,index,prefix,dtype,attention_fn,memo
         name=f'{prefix}{index}')(query,key,mask=mask)
 
 
-def fused_full_attention(query,key,value,mask=None,**kwargs):
+def fused_full_attention(query,key,value,mask=None,query_is_memory=False,**kwargs):
     """cuDNN full attention with exact prefix lengths and masked even padding.
 
     JAX 0.4.38's cuDNN backward requires even sequence lengths. The extra
@@ -60,7 +65,7 @@ def fused_full_attention(query,key,value,mask=None,**kwargs):
     qlength=query.shape[1];klength=key.shape[1]
     kv_lengths=(j.sum(mask[:,0,0,:],axis=-1).astype(j.int32) if mask is not None
                 else j.full((query.shape[0],),klength,j.int32))
-    q_lengths=kv_lengths if mask is not None and qlength==klength else j.full((query.shape[0],),qlength,j.int32)
+    q_lengths=kv_lengths if query_is_memory else j.full((query.shape[0],),qlength,j.int32)
     pad=lambda x:j.pad(x,((0,0),(0,x.shape[1]%2),(0,0),(0,0)))
     return jax.nn.dot_product_attention(pad(query),pad(key),pad(value),
         query_seq_lengths=q_lengths,key_value_seq_lengths=kv_lengths,

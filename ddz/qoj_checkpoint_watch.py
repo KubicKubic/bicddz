@@ -122,15 +122,16 @@ class CheckpointWatcher:
         key=(str(policy),step,stat.st_size,stat.st_mtime_ns)
         if key==self.failed_key and time.monotonic()<self.retry_after:return False
         started=time.monotonic()
+        serving=self.model  # Retain one architecture while the serving thread commits.
         try:
             params,metadata=read_weights(metadata)
             replacement=None
-            current_config=getattr(self.model,'config',None)
+            current_config=getattr(serving,'config',None)
             if current_config is not None and config['model']!=current_config['model']:
-                replacement=self.model.prepare_replacement(params,config)
+                replacement=serving.prepare_replacement(params,config)
                 params=replacement.params
             else:
-                params=self.model.prepare_params(params,config)
+                params=serving.prepare_params(params,config)
         except Exception:
             self.failed_key=key;self.retry_after=time.monotonic()+60
             raise
@@ -163,6 +164,13 @@ class CheckpointWatcher:
         try:params,metadata,replacement=self.ready.get_nowait()
         except queue.Empty:return False
         if metadata['global_step']<=self.active['global_step']:return False
+        # A newer global step alone does not permit applying a stale V5 tree to
+        # a V6 model when pointer changes overlap background preparation.
+        config=getattr(replacement if replacement is not None else self.model,'config',None)
+        if config is not None and metadata['model_signature']!=model_signature(config):
+            self.prepared_step=self.active['global_step']
+            self.event({'event':'model_update_rejected','summary':'Prepared model architecture no longer matches serving policy'})
+            return False
         metadata={**metadata,'activated_at':time.time()}
         try:atomic_json(self.root/'active_model.json',metadata)
         except OSError as error:
@@ -175,7 +183,12 @@ class CheckpointWatcher:
         if replacement is not None:self.model=replacement
         else:self.model.params=params
         self.active=metadata
-        self.on_activate(metadata)
+        try:self.on_activate(metadata)
+        except Exception as error:
+            # Activation is already durably committed. A dashboard/deployment
+            # write failure must not make a model decision fail or lose it.
+            self.event({'event':'model_activation_reporting_failed','error':str(error),
+                'summary':f'Raw step={metadata["global_step"]} active; metadata callback failed'})
         self.event({'event':'model_activated','previous_global_step':previous,
             'global_step':metadata['global_step'],
             'checkpoint_sha256':metadata['checkpoint_sha256'],

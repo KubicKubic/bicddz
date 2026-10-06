@@ -29,13 +29,15 @@ def revised_config(old):
 
 def validate_growth(source, target):
     """Do not accept a shape-compatible migration that changes head temperature."""
-    fixed = ('width', 'heads', 'ff', 'memory_ff', 'wing_rank', 'action_width',
-             'interaction_width', 'action_hidden', 'bf16', 'attention_backend')
+    changed={'layers','memory_layers','attention_width','attention_heads',
+        'memory_attention_width','memory_attention_heads','inherited_layers',
+        'inherited_memory_layers','new_layer_ff'}
+    fixed = (set(source)|set(target))-changed
     for key in fixed:
         if source.get(key) != target.get(key):
             raise ValueError('Unsupported architecture change: ' + key)
-    from .model_v5 import InteractionMoveTransformer
-    a, b = InteractionMoveTransformer(**source), InteractionMoveTransformer(**target)
+    from .model_efficiency import EfficientMoveTransformer
+    a, b = EfficientMoveTransformer(**source), EfficientMoveTransformer(**target)
     for memory in (False, True):
         old, new = a.attention_options(memory), b.attention_options(memory)
         if (new['qkv_features'] < old['qkv_features'] or
@@ -85,14 +87,27 @@ def inherited_births(params, origin):
     from .optimizer_efficiency import coordinate_births
     if origin.get('coordinate_births') is not None:
         result = origin['coordinate_births']
-        if set(flatten_dict(result)) != set(flatten_dict(params)):
+        flat=flatten_dict(result)
+        if set(flat) != set(flatten_dict(params)):
             raise ValueError('Saved coordinate birth map differs from parameters')
+        for name,value in flatten_dict(params).items():
+            birth=np.asarray(flat[name])
+            if (birth.shape not in ((),np.shape(value)) or birth.dtype.kind not in 'iu'
+                    or np.any(birth<0)):
+                raise ValueError('Saved coordinate birth shape/dtype/age is invalid')
         return result
     return coordinate_births(params, params, origin.get('optimizer_origin'), 0)
 
 
 def grow_births(template, source, old_births, fork_step):
+    if fork_step<0:raise ValueError('Negative Adam fork step')
     old, births = flatten_dict(source), flatten_dict(old_births)
+    if set(old)!=set(births):raise ValueError('Coordinate birth map differs from source')
+    for name,value in old.items():
+        birth=np.asarray(births[name])
+        if (birth.shape not in ((),np.shape(value)) or birth.dtype.kind not in 'iu'
+                or np.any(birth<0) or np.any(birth>fork_step)):
+            raise ValueError('Coordinate birth shape/dtype/age is invalid')
     result = {}
     for name, value in flatten_dict(template).items():
         if name not in old:

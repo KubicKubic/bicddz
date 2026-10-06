@@ -56,6 +56,12 @@ QOJ 客户端提前部署支持 V6 的代码，模型架构切换时后台预热
 工程测试不等于实力提升；最新记录见
 [扩容报告](reports/V6_ATTENTION_SCALING_20261006.md)。
 
+后续审计修订冻结在 `runs/v6_cluster8_attention_8m_v4`：58 项 CPU 工程测试、
+真实完整断点迁移与冷恢复、两种生产 CUDA 反向尺寸均已通过。128 个实际局面
+的 raw/EMA CPU FP32、CUDA BF16 输出均保持一致；本地反向显存峰值约 24.6 GiB。
+正式八卡验收通过后才接管生产，详见
+[架构审计报告](reports/V6_ARCHITECTURE_AUDIT_20261006.md)。
+
 ## V5：更深的注意力与动作交互
 
 入口为 `ddz.train_v5`、`configs/a100_v5.json` 和 `ddz.api_v5`，运行目录为

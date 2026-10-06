@@ -57,6 +57,7 @@ def prepare(repo, root, models, token_file, username, base, session, python,
     launcher = '\n'.join([
         '#!/usr/bin/env bash', 'set -euo pipefail',
         f'export DDZ_MATCH_ROOT={quote(str(root))}',
+        'if [[ -f "$DDZ_MATCH_ROOT/OFFLINE.json" && "${DDZ_QOJ_ENABLE_ONLINE:-0}" != 1 ]]; then echo "QOJ is disabled by the user; explicit online enable is required."; exit 77; fi',
         'if [[ -f "$DDZ_MATCH_ROOT/network.env" ]]; then source "$DDZ_MATCH_ROOT/network.env"; fi',
         f'export DDZ_DEPLOYMENT_FILE={quote(str(frozen / "deployment.json"))}',
         f'export PYTHONPATH={quote(str(frozen / "code"))}',

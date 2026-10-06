@@ -1,0 +1,324 @@
+{
+  "time": 1791261785.7095773,
+  "parameters": 8014192,
+  "campaign": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_v4",
+  "queue_item": {
+    "command_sha256": "2b1da50890d3a549c24ec275a57ff903a973ba13d484467e433aa1630cc4f8b2",
+    "id": "01791261485793277820-a18907712e714ca886d64606d966aa10",
+    "path": "/mnt/pfs/guoyuchong/guoyuchong/Q/tools/cluster/cluster_scheduler.queue/pending/01791261485793277820-a18907712e714ca886d64606d966aa10.json"
+  },
+  "source_boundary": {
+    "relative_step": 50600,
+    "global_step": 77154
+  },
+  "superseded_queue_id": "01791255926925671076-43efbf2522974b2ea404f5035c59cac8",
+  "ready_files_verified": 108,
+  "engineering_audit_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1",
+  "engineering_proofs": {
+    "RESUME_VERIFICATION.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/RESUME_VERIFICATION.json",
+      "sha256": "f138e3d745653ee257baea8986560fea1d1b330376be20969353d005b869e0ef",
+      "data": {
+        "passed": true,
+        "scope": "Real full checkpoint, CPU migration/serialization/cold restore; not eight-GPU evidence",
+        "source_iteration": 49900,
+        "global_iteration": 76454,
+        "source_sha256": "bdcfb9e0315a8274fe051f4be66ba7143cb2fecc183302f266dcced7909464ba",
+        "migrated_sha256": "e4712821cbfaec83f096fb359f8082da3ea91d678df353ea9d53fab1c86c7c0c",
+        "parameters": 8014192,
+        "optimizer_step": 5174079,
+        "ema_updates": 10900,
+        "ema_decay": 0.999,
+        "envs": 65536,
+        "rng_shape": [
+          8,
+          2
+        ],
+        "inherited_weights_moments_and_ages_exact": true,
+        "all_environment_fields_and_arena_restored": true,
+        "cold_restore_exact": true,
+        "seconds": 27.891764225438237,
+        "time": 1791260305.4150035,
+        "fp32_source_function": {
+          "raw": {
+            "fp32": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          },
+          "ema": {
+            "fp32": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          }
+        },
+        "validated_saved_births_cold_restore_exact": true
+      }
+    },
+    "CPU_SOURCE_FUNCTION.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/CPU_SOURCE_FUNCTION.json",
+      "sha256": "d8b78746fb08efef301cde2c1e10dd15c22e6796014deae92a63249ab5807304",
+      "data": {
+        "passed": true,
+        "source_iteration": 49900,
+        "function_probe": {
+          "raw": {
+            "fp32": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          },
+          "ema": {
+            "fp32": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          }
+        }
+      }
+    },
+    "CUDA_VERIFICATION.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/CUDA_VERIFICATION.json",
+      "sha256": "94fcb77c8f7d92ba3337b1ee0c462708f9fde86cb9e9d49d622f8db077426769",
+      "data": {
+        "passed": true,
+        "scope": "Single local A100 CUDA engineering; not NCCL/eight-rank or strength evidence",
+        "source_iteration": 49900,
+        "function_probe": {
+          "raw": {
+            "bf16": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          },
+          "ema": {
+            "bf16": {
+              "states": 128,
+              "body_kl_max": 0.0,
+              "body_kl_mean": 0.0,
+              "complete_action_flips": 0,
+              "selected_complete_logprob_max_error": 0.0,
+              "value_max_error": 0.0
+            }
+          }
+        },
+        "training_signatures": {
+          "passed": true,
+          "backend": "gpu",
+          "device": "NVIDIA A100-SXM4-80GB",
+          "signatures": [
+            {
+              "memory_length": 88,
+              "per_gpu_minibatch": 4096,
+              "finite": true,
+              "loss": 16.2641658782959,
+              "gradient_norm": 1043.1527099609375,
+              "seconds": 89.85048128291965,
+              "compiled_temp_bytes": 26297237952,
+              "peak_bytes_in_use": 26399646976
+            },
+            {
+              "memory_length": 192,
+              "per_gpu_minibatch": 1024,
+              "finite": true,
+              "loss": 12.566821098327637,
+              "gradient_norm": 524.5964965820312,
+              "seconds": 86.3502405397594,
+              "compiled_temp_bytes": 11128410296,
+              "peak_bytes_in_use": 26399646976
+            }
+          ]
+        },
+        "attention_mask_parity": {
+          "passed": true,
+          "cases": [
+            {
+              "heads": 2,
+              "history_queries": false,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 2,
+              "history_queries": true,
+              "max_error": 0.0078125
+            },
+            {
+              "heads": 4,
+              "history_queries": false,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 4,
+              "history_queries": true,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 6,
+              "history_queries": false,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 6,
+              "history_queries": true,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 8,
+              "history_queries": false,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 8,
+              "history_queries": true,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 10,
+              "history_queries": false,
+              "max_error": 0.015625
+            },
+            {
+              "heads": 10,
+              "history_queries": true,
+              "max_error": 0.0078125
+            }
+          ]
+        },
+        "time": 1791260999.9663222
+      }
+    },
+    "TESTS_VERIFICATION.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/TESTS_VERIFICATION.json",
+      "sha256": "cd727530e84c9608d3c06408c610067632e038055703eb2899a28fc956056720",
+      "data": {
+        "passed": true,
+        "tests": 58,
+        "scope": "CPU engineering tests plus local A100 CUDA rehearsal; remote eight-rank NCCL gate still required",
+        "batches": [
+          {
+            "command": "pytest -q tests/test_v6_audit.py tests/test_v6_handoff.py tests/test_v6_scaling.py tests/test_qoj_checkpoint_watch.py",
+            "tests": 50,
+            "result": "50 passed in 145.77s"
+          },
+          {
+            "command": "XLA_FLAGS=--xla_force_host_platform_device_count=8 pytest -q tests/test_distributed_v5.py",
+            "tests": 3,
+            "result": "3 passed in 42.26s"
+          },
+          {
+            "command": "XLA_FLAGS=--xla_force_host_platform_device_count=8 pytest -q tests/test_v6_distributed.py",
+            "tests": 1,
+            "result": "1 passed in 177.73s"
+          },
+          {
+            "command": "pytest -q tests/test_v6_audit.py::test_new_attention_interiors_learn_after_the_zero_output_gate_opens",
+            "tests": 1,
+            "result": "1 passed in 79.10s"
+          },
+          {
+            "command": "pytest -q tests/test_v6_audit.py::test_user_offline_marker_blocks_the_qoj_start_script",
+            "tests": 1,
+            "result": "1 passed in 15.95s"
+          },
+          {
+            "command": "pytest -q tests/test_v6_audit.py::test_reviewed_supersession_retains_receipt_and_never_cancels_a_claim",
+            "tests": 2,
+            "result": "2 passed in 15.89s"
+          }
+        ],
+        "cpu_environment": {
+          "JAX_PLATFORMS": "cpu",
+          "CUDA_VISIBLE_DEVICES": "",
+          "OMP_NUM_THREADS": "2",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "covered": [
+          "FP32/BF16 migration and complete legal actions",
+          "all variable histories and invisible padding",
+          "explicit self/cross prefix lengths",
+          "new interiors get gradients after zero outputs open",
+          "Adam moments and coordinate birth validation",
+          "full checkpoint/env/RNG/EMA cold restore",
+          "eight CPU ranks grown-model PPO matches global batch",
+          "policy/EMA replica equality",
+          "QOJ background architecture race and reporting fault",
+          "offline launch guard",
+          "pending queue supersession/claim guard"
+        ],
+        "architecture_parameters": 8014192,
+        "time": 1791261448.9336894
+      }
+    },
+    "COMPILER_WARNINGS.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/COMPILER_WARNINGS.json",
+      "sha256": "0badbe8ecb2ca7232dbf101f6da8a41901e4f7830e4ae76b05709cf042e43100",
+      "data": {
+        "reviewed": true,
+        "jax_xla_pin": "20a482597b7dd3067b26ca382b88084ee5a21cf7",
+        "source_url": "https://github.com/openxla/xla/blob/20a482597b7dd3067b26ca382b88084ee5a21cf7/xla/service/gpu/autotuning/gemm_fusion_autotuner.cc#L1076",
+        "source_sha256": "f63b2c4c8feb5ba20a9b24296ffe8572eec6699f77bd5c740e4af2c9dab733bd",
+        "log": "runs/v6_audit_20261006_v1/cuda_engineering_attempt_2.log",
+        "interpretation": "Numerically mismatching autotuning candidates are marked DISQUALIFIED at lines 1082-1085. The final executed backward signatures were finite; no compiler precision flags were changed."
+      }
+    },
+    "CUDA_FAILED_ATTEMPT_1.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/CUDA_FAILED_ATTEMPT_1.json",
+      "sha256": "530087c0b77ca9505333b74efda0781d039eb59bd2027ab677f2f6cd6abae1be",
+      "data": {
+        "state": "reviewed_failed_engineering_attempt",
+        "automatic_retry": false,
+        "log": "runs/v6_audit_20261006_v1/cuda_engineering.log",
+        "cause": "30% local allocator cap; single requested temporary buffer 25473057216 bytes",
+        "remedy": "Explicit attempt 2 used 37.5% allocator; passed full production backward signatures",
+        "retained_foreign_gpu_state": true,
+        "idle_restored_on_failure": true
+      }
+    },
+    "LOCAL_GPU_HANDOFF_2.json": {
+      "path": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_audit_20261006_v1/LOCAL_GPU_HANDOFF_2.json",
+      "sha256": "edb3c761e7eb2176afad820dd420538d63c118ad21ecc7a54d4e4d61c137f436",
+      "data": {
+        "old_controller_pid": 3248531,
+        "old_burn_pid": 3248532,
+        "state": "controller_restored",
+        "time": 1791261000.9185612,
+        "new_controller_pid": 3257883,
+        "idle_or_evaluation_restored": true
+      }
+    }
+  },
+  "ready_resource_gate": {
+    "source_peak_bytes": 23637483008,
+    "estimated_peak_bytes": 50496191488,
+    "remote_capacity_free_memory_check_required": true,
+    "hardware_evidence": "existing accepted eight A100-80GB ranks and NCCL source engineering log"
+  },
+  "production_still_v5": true,
+  "real_v6_eight_gpu_result": "pending, nranks=8/NCCL required",
+  "source_functions": [
+    "FP32 CPU raw/EMA exact on128 states",
+    "CUDA BF16 raw/EMA exact on128 states"
+  ],
+  "qoj": "pause executed then another shared-workspace task restarted and recorded resume override; user clarification requested"
+}

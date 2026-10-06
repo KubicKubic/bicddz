@@ -12,7 +12,7 @@ import time
 import numpy as np
 from flax import serialization
 from .scale_rollout_campaign import read, write, sha, summarize
-from .switch_distributed_gae import cancel_old_followups, equal
+from .switch_distributed_gae import cancel_old_followups, old_followup, equal
 from .upgrade_v6 import revised_config, grow_parameters, grow_births, inherited_births
 
 
@@ -21,6 +21,8 @@ def migrate_checkpoint(saved, cfg, train, source_hash, source_path):
         raise ValueError('Migration differs from the authorized architecture-only preset')
     if np.shape(saved['key'])!=(8,2) or 'ema' not in saved:
         raise ValueError('Complete eight-rank checkpoint with EMA required')
+    if saved['ema']['decay']!=cfg.get('ema_decay',.999) or int(saved['ema']['updates'])<0:
+        raise ValueError('Saved rollout EMA clock/decay differs')
     result={**saved,'config':copy.deepcopy(cfg),'train':train,'runtime':copy.deepcopy(saved['runtime'])}
     result['ema']={**saved['ema'],'params':grow_parameters(train['params'],saved['ema']['params'],
         saved['config']['model'],cfg['model'])}
@@ -40,6 +42,8 @@ def migrate_checkpoint(saved, cfg, train, source_hash, source_path):
     flat_params=flatten_dict(train['params'])
     for key,value in flatten_dict(saved['train']['params']).items():
         target=flat_params[key]
+        if np.asarray(target).dtype!=np.asarray(value).dtype:
+            raise ValueError('Inherited weight dtype changed')
         if not np.array_equal(np.asarray(target)[tuple(slice(0,n) for n in np.shape(value))],value):
             raise ValueError('Inherited weight coordinates changed')
     def check_optimizer(old,new):
@@ -47,6 +51,7 @@ def migrate_checkpoint(saved, cfg, train, source_hash, source_path):
             for key,value in old.items():check_optimizer(value,new[key])
         else:
             old=np.asarray(old);new=np.asarray(new)
+            if old.dtype!=new.dtype:raise ValueError('Inherited Adam dtype changed')
             if not np.array_equal(new[tuple(slice(0,n) for n in old.shape)],old):
                 raise ValueError('Inherited Adam state changed')
     check_optimizer(saved['train']['opt_state'],train['opt_state'])
@@ -56,6 +61,23 @@ def migrate_checkpoint(saved, cfg, train, source_hash, source_path):
         if not equal(saved['runtime'][key],result['runtime'][key]):
             raise ValueError('Inherited runtime changed: '+key)
     return result
+
+
+def expected_followup(queue,old,steps):
+    """Validate the entire cancellation set before mutating any queue item."""
+    import shlex
+    found=[]
+    for path in sorted((queue/'pending').glob('*.json')):
+        record=read(path)
+        if old_followup(record,old):found.append((path,record))
+    if len(found)!=1:raise RuntimeError('Exactly one old DDZ continuation required before promotion')
+    path,record=found[0];tokens=shlex.split(record['command'])
+    if (record['status']!='pending' or '--steps' not in tokens or
+        int(tokens[tokens.index('--steps')+1])!=steps or
+        record['command_sha256']!=hashlib.sha256(record['command'].encode()).hexdigest() or
+        (queue/'interrupted'/path.name).exists()):
+        raise RuntimeError('Old continuation identity/boundary differs')
+    return record['id']
 
 
 def function_probe(saved,migrated,precision_modes=('fp32','bf16')):
@@ -82,6 +104,9 @@ def function_probe(saved,migrated,precision_modes=('fp32','bf16')):
             b=EfficientMoveTransformer(**{**migrated['config']['model'],'bf16':precision=='bf16'})
             old=jax.jit(lambda params,obs:a.apply({'params':params},obs))(p,observations)
             new=jax.jit(lambda params,obs:b.apply({'params':params},obs))(q,observations)
+            for output in (old,new):
+                if not all(np.all(np.isfinite(np.asarray(x))) for x in jax.tree_util.tree_leaves(output)):
+                    raise RuntimeError(f'{kind} {precision} nonfinite migration output')
             lp,lq=jax.nn.log_softmax(old[0]),jax.nn.log_softmax(new[0])
             kl=np.asarray(j.sum(j.exp(lp)*(lp-lq),axis=-1))
             old_actions=choose(states,old[0],old[1]);new_actions=choose(states,new[0],new[1])
@@ -122,7 +147,8 @@ def main():
     status=read(old_run/'status.json');proof=read(old/'production/queue_job_status.json')
     at=request['at_iteration']
     if (status['state']!='completed' or status['iteration']!=at or status['nranks']!=8 or
-        not proof.get('passed') or proof.get('nranks')!=8 or not proof.get('NCCL_evidence')):
+        not proof.get('passed') or proof.get('nranks')!=8 or not proof.get('NCCL_evidence') or
+        proof.get('queue_id')!=request['active_source_queue_id']):
         raise RuntimeError('Expected source queue boundary lacks accepted eight-rank NCCL proof')
     phase=root/'production';run=phase/'training'
     if run.exists():raise RuntimeError('Migration already exists; explicit review required before any retry')
@@ -145,18 +171,21 @@ def main():
     model,ts=create(cfg,saved)
     train=serialization.to_state_dict(ts)
     migrated=migrate_checkpoint(saved,cfg,train,hashlib.sha256(raw).hexdigest(),phase/'source.msgpack')
-    probe=function_probe(saved,migrated)
+    # CPU verifies mathematical identity. BF16 is accepted on the actual CUDA
+    # backend; CPU BF16 uses different kernels from production cuDNN.
+    probe=function_probe(saved,migrated,precision_modes=('fp32',))
     params=sum(x.size for x in __import__('jax').tree_util.tree_leaves(train['params']))
     if params!=8_014_192:raise RuntimeError('Audited 8M parameter budget differs')
     # Keep the old production follow-up until every pre-training migration gate passes.
     source_hash=hashlib.sha256(raw).hexdigest()
-    (phase/'source.msgpack').write_bytes(raw)
+    from .train_v2 import atomic
+    atomic(phase/'source.msgpack',raw)
     run.mkdir();(run/'ema').mkdir()
-    (run/'latest.msgpack').write_bytes(serialization.msgpack_serialize(migrated))
-    (run/f'policy_{at:07d}.msgpack').write_bytes(serialization.msgpack_serialize(train['params']))
-    (run/'ema'/f'policy_{at:07d}.msgpack').write_bytes(serialization.msgpack_serialize(migrated['ema']['params']))
-    write(run/'latest.json',{'iteration':at,'policy':f'policy_{at:07d}.msgpack','time':time.time()})
+    atomic(run/'latest.msgpack',serialization.msgpack_serialize(migrated))
+    atomic(run/f'policy_{at:07d}.msgpack',serialization.msgpack_serialize(train['params']))
+    atomic(run/'ema'/f'policy_{at:07d}.msgpack',serialization.msgpack_serialize(migrated['ema']['params']))
     write(run/'config.json',cfg)
+    write(run/'latest.json',{'iteration':at,'policy':f'policy_{at:07d}.msgpack','time':time.time()})
     with (run/'metrics.jsonl').open('w') as stream:
         for line in (old_run/'metrics.jsonl').read_text().splitlines():
             if json.loads(line)['iteration']<=at:stream.write(line+'\n')
@@ -189,12 +218,17 @@ def main():
     final=serialization.msgpack_restore((run/'latest.msgpack').read_bytes())
     if final['ema']['updates']!=saved['ema']['updates']+8 or final['ema']['decay']!=.999:
         raise RuntimeError('Rollout-clock EMA continuity failed')
+    if (not final['runtime'].get('v6_cuda_source_function_probe') or
+        not final['runtime'].get('v6_cuda_training_signatures',{}).get('passed')):
+        raise RuntimeError('V6 CUDA function/backward signature proof missing')
     if result['gpu_peak_memory_bytes']>=min(capacities)*.8:raise RuntimeError('Measured peak exceeds allocator budget')
     result.update(parameters=params,NCCL_evidence=nccl[:8],log=str(log),global_envs=cfg['envs'],
-                  global_minibatch=cfg['ppo']['minibatch'],time=time.time())
+                  global_minibatch=cfg['ppo']['minibatch'],
+                  cuda_training_signatures=final['runtime']['v6_cuda_training_signatures'],time=time.time())
     # Cancel only the old DDZ successor while this FIFO item owns the worker.
+    expected=expected_followup(Path(request['queue']),old,min(at+1000,saved['config']['continuation_updates']))
     cancelled=cancel_old_followups(Path(request['queue']),old)
-    if len(cancelled)!=1:raise RuntimeError('Old continuation count differs; inspect before promotion')
+    if cancelled!=[expected]:raise RuntimeError('Old continuation changed during cancellation')
     for task in cancelled:
         path=Path(request['queue'])/'interrupted'/(task+'.json');record=read(path)
         record['reason']='USER_SCALED_DDZ_ATTENTION_TO_8M';write(path,record)

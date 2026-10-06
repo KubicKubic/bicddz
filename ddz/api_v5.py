@@ -143,7 +143,8 @@ class Policy:
         if config.get('ppo',{}).get('gae_clock','public')!=self.config.get('ppo',{}).get('gae_clock','public'):
             raise ValueError('Architecture upgrade changes value semantics')
         validate_growth(self.config['model'],config['model'])
-        model=InteractionMoveTransformer(**config['model'])
+        from .model_efficiency import EfficientMoveTransformer
+        model=EfficientMoveTransformer(**config['model'])
         initial=env.reset(jax.random.PRNGKey(0))
         obs=jax.tree_util.tree_map(lambda x:x[None],env.observe(initial))
         expected=jax.eval_shape(lambda:model.init(jax.random.PRNGKey(1),obs,memory_length=4)['params'])

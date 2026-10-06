@@ -97,9 +97,9 @@ same-worker recovery were explicitly user-directed emergency control.
 ## V6 attention scaling (user instruction, 2026-10-06)
 
 V6 contains 8,014,192 parameters. Its frozen queued campaign is
-`runs/v6_cluster8_attention_8m_v3`, task
-`01791255926925671076-43efbf2522974b2ea404f5035c59cac8`, scheduled after the
-current V5 segment ends at relative 50600 / global 77154. V1/V2 were superseded
+`runs/v6_cluster8_attention_8m_v4`, task
+`01791261485793277820-a18907712e714ca886d64606d966aa10`, scheduled after the
+current V5 segment ends at relative 50600 / global 77154. V1/V2/V3 were superseded
 before execution with retained interrupted receipts; never run or resubmit them.
 Inspect REQUEST, SUBMISSION, engineering_READY and queue state before reporting
 V6 as training. CPU verification alone is not eight-GPU or playing-strength proof.
@@ -126,3 +126,18 @@ validation and warmup. The serving thread commits between requests/decisions;
 further V6 updates replace weights in place. Persisted V6 activation can resume
 from the frozen V5 fallback. Live weights remain V5 until V6 is actually promoted.
 See `reports/V6_ATTENTION_SCALING_20261006.md` and its JSON proof index.
+
+The V4 freeze incorporates the user's subsequent architecture audit. Its READY
+binds 58 CPU engineering tests, a real 65,536-environment full checkpoint
+migration/cold restore, and local A100 short/full-history backward signatures
+(4096 x 88 / 1024 x 192). The local source was relative 49900 / global 76454;
+both raw and EMA migration outputs were exact in CPU FP32 and CUDA BF16 on 128
+actual states. Measured local backward peak was 26,399,646,976 bytes. This is
+single-GPU engineering evidence; eight actual rollout rounds and real NCCL
+still gate promotion. The migration restores validated resident states without
+redealing a discarded template, uses atomic checkpoint publication, verifies
+the exact old continuation before cancellation, and checks explicit history
+query masks, coordinate ages, finite metrics and EMA replica agreement.
+See `reports/V6_ARCHITECTURE_AUDIT_20261006.md`; preserved artifacts are in
+`runs/v6_audit_20261006_v1`. The local controller PID changed during owned GPU
+engineering; use its current pointer, never historical process ids.
