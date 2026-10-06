@@ -45,7 +45,7 @@ def export_bundle(run, out):
         shutil.copyfile(ema_policy, temporary / 'ema_policy.msgpack')
         (temporary / 'config.json').write_text(json.dumps(cfg, indent=2) + '\n')
         manifest = {
-            'family': 'V5', 'policy_kind': 'raw', 'relative_step': iteration,
+            'family': cfg.get('model_family','V5'), 'policy_kind': 'raw', 'relative_step': iteration,
             'global_step': cfg.get('global_source_iteration', 0) + iteration,
             'parameters': sum(a.size for a in jax.tree_util.tree_leaves(saved['train']['params'])),
             'ema_decay': saved['ema']['decay'], 'ema_rollout_updates': saved['ema']['updates'],

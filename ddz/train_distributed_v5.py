@@ -35,6 +35,14 @@ def replica_difference(params):
     return max(float(np.max(np.abs(x-x[0]))) for x in jax.tree_util.tree_leaves(arrays))
 
 
+def source_template_key(source_key,resuming):
+    """One key for the reset template; saved per-rank streams restore separately."""
+    key=j.asarray(source_key)
+    if key.shape==(2,):return key
+    if resuming and key.shape==(8,2):return key[0]
+    raise ValueError('Source RNG requires one key or eight keys with explicit resume')
+
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--config',type=Path,required=True)
     ap.add_argument('--source',type=Path,required=True);ap.add_argument('--out',type=Path,required=True)
@@ -66,9 +74,9 @@ def main():
     jax.config.update('jax_compilation_cache_dir',str(out.parent/'jax_cache'))
     model,ts=create(cfg,source)
     parameters=sum(x.size for x in jax.tree_util.tree_leaves(ts.params))
-    if parameters>5_500_000:raise ValueError('Parameter limit exceeded')
+    if parameters>cfg.get('parameter_limit',5_500_000):raise ValueError('Parameter limit exceeded')
     b=cfg['per_gpu_envs'];p=cfg['ppo'];memory=cfg.get('memory_limit',88)
-    base_key=j.asarray(source['key'])
+    base_key=source_template_key(source['key'],saved is not None)
     runtime=copy.deepcopy(source['runtime']);runtime.update(source_sha256=source_sha,
         source_checkpoint=str(args.source.resolve()),source_iteration=int(source['iteration']),
         source_adam_step=int(source['train']['step']),stable_updates=0,
@@ -90,6 +98,14 @@ def main():
         states=[original]+[env.batch_reset(jax.random.split(jax.random.fold_in(base_key,100+i),b)) for i in range(1,8)]
         games=jax.tree_util.tree_map(lambda *x:j.stack(x),*states)
         arena=ArenaState(games,j.zeros((8,b),j.int32),j.zeros((8,b),j.int32),j.zeros((8,b),j.bool_),j.zeros((8,b),j.bool_))
+    if cfg.get('model_family')=='V6' and not runtime.get('v6_cuda_source_function_probe'):
+        if start!=int(source['iteration']) or saved is None:
+            raise RuntimeError('Initial V6 CUDA source probe requires the migrated boundary checkpoint')
+        from .scale_architecture_v6 import function_probe
+        cuda_probe=function_probe(source,{'config':cfg,'train':{'params':ts.params},'ema':saved['ema']},
+                                  precision_modes=('bf16',))
+        runtime['v6_cuda_source_function_probe']=cuda_probe
+        print(json.dumps({'v6_cuda_source_function_probe':cuda_probe,'backend':jax.default_backend()}),flush=True)
     ts=jax.device_put_replicated(ts,devices)
     ema_decay=validate_decay(cfg.get('ema_decay',0.999))
     saved_ema=saved.get('ema') if saved else None

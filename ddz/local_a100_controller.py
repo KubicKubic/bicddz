@@ -14,6 +14,35 @@ from .local_douzero_watch import (read,write,pending_steps,active_cuda_processes
 from .douzero_precision import completed_blocks,aggregate
 
 
+def follow_architecture(cfg,regular,root):
+    """After draining V5 benchmarks, follow a verified V6 production handoff."""
+    pointer=cfg.get('follow_production_pointer')
+    if not pointer:return regular
+    current=read(pointer);run=Path(current['run'])
+    candidate=read(run/'config.json')
+    if candidate.get('model_family')!='V6' or str(run)==regular['run_dir']:return regular
+    proof=read(current['proof'])
+    if (current.get('nranks')!=8 or not proof.get('passed') or proof.get('nranks')!=8 or
+        not proof.get('NCCL_evidence') or proof.get('parameters')!=8_014_192):
+        raise RuntimeError('V6 local evaluator handoff lacks accepted eight-rank proof')
+    from .upgrade_v6 import revised_config
+    original=read(Path(regular['run_dir'])/'config.json')
+    if candidate!=revised_config(original):raise RuntimeError('Unregistered production architecture handoff')
+    receipt=Path(root)/'architecture_handoff.json'
+    if receipt.exists():
+        record=read(receipt)
+        if record['new_run']!=str(run):raise RuntimeError('Recorded V6 evaluator run differs')
+        first=record['initial_step']
+    else:
+        first=read(run/'latest.json')['iteration']
+        write(receipt,{'old_run':regular['run_dir'],'new_run':str(run),
+            'initial_step':first,'proof':current['proof'],'time':time.time()})
+    result={**regular,'run_dir':str(run),'initial_steps':[first]}
+    result['protocol']={**regular['protocol'],'architecture_transition':{
+        'family':'V6','parameters':8_014_192,'first_global_step':candidate['global_source_iteration']+first}}
+    return result
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--config',type=Path,required=True)
@@ -106,6 +135,10 @@ def main():
                 continue
             pending = pending_steps(regular['run_dir'],regular['start_step'],regular_root,
                                     regular.get('initial_steps',()))
+            if not pending:
+                regular=follow_architecture(cfg,regular,root)
+                pending=pending_steps(regular['run_dir'],regular['start_step'],regular_root,
+                                      regular.get('initial_steps',()))
             if pending:
                 step = pending[0]
                 if not run_evaluation(regular,step,regular_root/f'step_{step:07d}',regular['code_dir']):

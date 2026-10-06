@@ -107,6 +107,10 @@ def from_api(raw):
 class Policy:
     def __init__(self,config,checkpoint):
         cfg=json.loads(Path(config).read_text())
+        params=serialization.msgpack_restore(Path(checkpoint).read_bytes())
+        self._initialize(cfg,params)
+
+    def _initialize(self,cfg,params):
         self.config=cfg
         self.own_value_clock=cfg.get('ppo',{}).get('gae_clock','public')=='own'
         model_type=InteractionMoveTransformer
@@ -114,8 +118,7 @@ class Policy:
             from .model_efficiency import EfficientMoveTransformer
             model_type=EfficientMoveTransformer
         self.model=model_type(**cfg['model'])
-        self.params=jax.tree_util.tree_map(j.asarray,
-            serialization.msgpack_restore(Path(checkpoint).read_bytes()))
+        self.params=jax.tree_util.tree_map(j.asarray,params)
         # Weights must be a JIT argument: closing over self.params would keep
         # using the first compiled checkpoint after a live weight replacement.
         self._forward=jax.jit(lambda params,s:self.model.apply({'params':params},
@@ -131,6 +134,33 @@ class Policy:
         self.choose(initial,logits[0],context).block_until_ready()
         self.observe(initial).ranks.block_until_ready()
         self.last_bid_diagnostics=None
+
+    def prepare_replacement(self,params,config):
+        """Warm an explicitly supported architecture upgrade off the game thread."""
+        from .upgrade_v6 import validate_growth
+        if config.get('model_family')!='V6':
+            raise ValueError('Unregistered model family upgrade')
+        if config.get('ppo',{}).get('gae_clock','public')!=self.config.get('ppo',{}).get('gae_clock','public'):
+            raise ValueError('Architecture upgrade changes value semantics')
+        validate_growth(self.config['model'],config['model'])
+        model=InteractionMoveTransformer(**config['model'])
+        initial=env.reset(jax.random.PRNGKey(0))
+        obs=jax.tree_util.tree_map(lambda x:x[None],env.observe(initial))
+        expected=jax.eval_shape(lambda:model.init(jax.random.PRNGKey(1),obs,memory_length=4)['params'])
+        before,structure=jax.tree_util.tree_flatten(expected)
+        after,new_structure=jax.tree_util.tree_flatten(params)
+        if structure!=new_structure:
+            raise ValueError('Replacement parameter tree differs from configured model')
+        if sum(x.size for x in after)>config.get('parameter_limit',8_100_000):
+            raise ValueError('Replacement parameter cap exceeded')
+        for target,value in zip(before,after):
+            if target.shape!=value.shape or target.dtype!=value.dtype or not np.all(np.isfinite(value)):
+                raise ValueError('Replacement parameter shape/dtype/finite check failed')
+        candidate=type(self).__new__(type(self))
+        candidate._initialize(config,params)
+        candidate.params=candidate.prepare_params(candidate.params,config)
+        candidate.capture_observation=self.capture_observation
+        return candidate
 
     def forward(self,state):
         return self._forward(self.params,state)

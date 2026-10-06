@@ -27,6 +27,16 @@ def model_signature(config):
             'gae_clock':config.get('ppo',{}).get('gae_clock','public')}
 
 
+def compatible_signature(frozen,config):
+    if model_signature(config)==model_signature(frozen):return True
+    if (config.get('model_family')!='V6' or
+        model_signature(config)['gae_clock']!=model_signature(frozen)['gae_clock']):return False
+    from .upgrade_v6 import validate_growth
+    try:validate_growth(frozen['model'],config['model'])
+    except (ValueError,KeyError,TypeError):return False
+    return True
+
+
 def discover(pointer):
     """latest.json is published AFTER full, raw and EMA checkpoint files."""
     run=Path(json.loads(Path(pointer).read_text())['run']).resolve()
@@ -73,8 +83,8 @@ def resume_paths(root,deployment,event):
         if (type(metadata['global_step']) is not int or
             metadata['global_step']<deployment['global_step'] or
             metadata.get('policy_kind')!='raw' or
-            metadata['model_signature']!=model_signature(frozen) or
-            model_signature(config)!=model_signature(frozen)):
+            metadata['model_signature']!=model_signature(config) or
+            not compatible_signature(frozen,config)):
             raise ValueError('Recovered model is incompatible or older than frozen release')
         read_weights(metadata)
         return Path(metadata['config_path']),Path(metadata['source_checkpoint']),metadata
@@ -114,7 +124,13 @@ class CheckpointWatcher:
         started=time.monotonic()
         try:
             params,metadata=read_weights(metadata)
-            params=self.model.prepare_params(params,config)
+            replacement=None
+            current_config=getattr(self.model,'config',None)
+            if current_config is not None and config['model']!=current_config['model']:
+                replacement=self.model.prepare_replacement(params,config)
+                params=replacement.params
+            else:
+                params=self.model.prepare_params(params,config)
         except Exception:
             self.failed_key=key;self.retry_after=time.monotonic()+60
             raise
@@ -122,7 +138,8 @@ class CheckpointWatcher:
         metadata['prepare_seconds']=time.monotonic()-started
         try:self.ready.get_nowait()
         except queue.Empty:pass
-        self.ready.put_nowait((params,metadata))
+        metadata['architecture_upgrade']=replacement is not None
+        self.ready.put_nowait((params,metadata,replacement))
         self.prepared_step=step;self.failed_key=None
         self.event({'event':'model_prepared','global_step':step,
             'checkpoint_sha256':metadata['checkpoint_sha256'],
@@ -143,7 +160,7 @@ class CheckpointWatcher:
             self.stop.wait(self.poll_seconds)
 
     def commit_ready(self):
-        try:params,metadata=self.ready.get_nowait()
+        try:params,metadata,replacement=self.ready.get_nowait()
         except queue.Empty:return False
         if metadata['global_step']<=self.active['global_step']:return False
         metadata={**metadata,'activated_at':time.time()}
@@ -155,7 +172,9 @@ class CheckpointWatcher:
             return False
         # This method is called only by the serving thread, outside inference.
         previous=self.active['global_step']
-        self.model.params=params;self.active=metadata
+        if replacement is not None:self.model=replacement
+        else:self.model.params=params
+        self.active=metadata
         self.on_activate(metadata)
         self.event({'event':'model_activated','previous_global_step':previous,
             'global_step':metadata['global_step'],

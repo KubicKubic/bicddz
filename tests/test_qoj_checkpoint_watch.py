@@ -59,6 +59,39 @@ def test_real_jit_replacement_changes_bid_and_value_without_recompilation(policy
     model.params=params
 
 
+def test_architecture_upgrade_warms_off_thread_commits_and_survives_restart(policy_files,tmp_path):
+    from ddz.upgrade_v6 import grow_parameters
+    root,cfg,params,state=policy_files
+    model=Policy(root/'config.json',root/'policy.msgpack')
+    model.capture_observation=True
+    new_cfg=copy.deepcopy(cfg)
+    new_cfg.update(model_family='V6',parameter_limit=8_100_000)
+    new_cfg['model'].update(layers=3,memory_layers=3,inherited_layers=2,
+        inherited_memory_layers=2,new_layer_ff=48,attention_width=48,
+        attention_heads=3,memory_attention_width=64,memory_attention_heads=4)
+    new=InteractionMoveTransformer(**new_cfg['model'])
+    obs=jax.tree_util.tree_map(lambda x:x[None],env.observe(state))
+    grown=grow_parameters(new.init(jax.random.PRNGKey(6),obs)['params'],params,cfg['model'],new_cfg['model'])
+    run=tmp_path/'training';bot=tmp_path/'bot';bot.mkdir()
+    publish(run,new_cfg,grown,8)
+    pointer=tmp_path/'pointer.json';atomic_json(pointer,{'run':str(run)})
+    events=[]
+    watcher=CheckpointWatcher(model,bot,pointer,{'global_step':107},lambda _:None,events.append)
+    assert watcher.poll_once() and watcher.model is model
+    before=model.forward(state)
+    assert watcher.commit_ready() and watcher.model is not model
+    assert watcher.model.capture_observation
+    after=watcher.model.forward(state)
+    for a,b in zip(jax.tree_util.tree_leaves(before),jax.tree_util.tree_leaves(after)):
+        np.testing.assert_allclose(a,b,atol=3e-6)
+    deployment={'model_dir':str(root),'global_step':106}
+    assert resume_paths(bot,deployment,events.append)[2]['global_step']==108
+    # Further checkpoints use parameter replacement on the newly compiled model.
+    publish(run,new_cfg,grown,9)
+    current=watcher.model
+    assert watcher.poll_once() and watcher.commit_ready() and watcher.model is current
+
+
 @pytest.mark.parametrize('fault',['nan','shape','dtype','tree','architecture','clock'])
 def test_incompatible_or_bad_weights_do_not_change_serving_model(policy_files,fault):
     root,cfg,params,state=policy_files

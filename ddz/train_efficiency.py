@@ -28,12 +28,20 @@ def create(cfg,source):
     model=EfficientMoveTransformer(**cfg['model'])
     one=env.batch_reset(jax.random.split(jax.random.PRNGKey(cfg['seed']),1))
     target=model.init(jax.random.PRNGKey(cfg['seed']+1),jax.vmap(env.observe)(one))['params']
-    flat=flatten_dict(target);old=flatten_dict(source['train']['params'])
-    for key,value in old.items():
-        if key not in flat or value.shape!=flat[key].shape:raise ValueError(f'base architecture changed {key}')
-        flat[key]=j.asarray(value)
-    params=unflatten_dict(flat)
-    births=coordinate_births(params,source['train']['params'],source['runtime'].get('optimizer_origin'),int(source['train']['step']))
+    if cfg.get('model_family')=='V6' and cfg['model']!=source['config']['model']:
+        from .upgrade_v6 import grow_parameters, grow_births, inherited_births
+        params=grow_parameters(target,source['train']['params'],source['config']['model'],cfg['model'])
+        births=grow_births(params,source['train']['params'],
+            inherited_births(source['train']['params'],source['runtime']),int(source['train']['step']))
+        params=jax.tree_util.tree_map(j.asarray,params)
+    else:
+        flat=flatten_dict(target);old=flatten_dict(source['train']['params'])
+        for key,value in old.items():
+            if key not in flat or value.shape!=flat[key].shape:raise ValueError(f'base architecture changed {key}')
+            flat[key]=j.asarray(value)
+        params=unflatten_dict(flat)
+        births=(source['runtime']['coordinate_births'] if 'coordinate_births' in source['runtime'] else
+            coordinate_births(params,source['train']['params'],source['runtime'].get('optimizer_origin'),int(source['train']['step'])))
     p=cfg['ppo']
     # Keep the original Adam/decay/schedule state schema for exact migration.
     # The actual learning rate is passed by fresh-data progress to make_update.
@@ -104,7 +112,7 @@ def main():
     if args.require_a100 and 'A100' not in device.device_kind:raise RuntimeError('requires A100')
     model,ts=create(cfg,source)
     params_count=sum(x.size for x in jax.tree_util.tree_leaves(ts.params))
-    if params_count>5_500_000:raise ValueError('parameter cap exceeded')
+    if params_count>cfg.get('parameter_limit',5_500_000):raise ValueError('parameter cap exceeded')
     b=cfg['envs'];p=cfg['ppo'];memory=cfg.get('memory_limit',88)
     states=env.batch_reset(jax.random.split(jax.random.PRNGKey(0),b))
     states=serialization.from_state_dict(states,source['env'])

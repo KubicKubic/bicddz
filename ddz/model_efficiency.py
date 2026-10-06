@@ -11,7 +11,7 @@ from .model import DenseEmbedding
 from .env_v2 import HISTORY, EVENT_DIM
 from .actions import N_BODY, COUNTS
 from .policy_v5 import WingContext
-from .model_v5 import InteractionMoveTransformer, PREFIX_FEATURES, fused_full_attention
+from .model_v5 import InteractionMoveTransformer, PREFIX_FEATURES, fused_full_attention, expanded_attention
 
 
 class EfficientMoveTransformer(InteractionMoveTransformer):
@@ -58,27 +58,23 @@ class EfficientMoveTransformer(InteractionMoveTransformer):
         # masked; padded queries are never read by the current-hand tokens.
         key_mask = valid[:, None, None, :]
         mem = nn.LayerNorm(dtype=dt, name='memory_norm')(mem)
-        for i in range(self.memory_layers):
+        for i in self.block_order(self.memory_layers, self.inherited_memory_layers):
             q = nn.LayerNorm(dtype=dt, name=f'memory_self_norm{i}')(mem)
-            attended = nn.MultiHeadDotProductAttention(
-                self.heads, dtype=dt, attention_fn=attention_fn,
-                name=f'memory_self{i}')(q, q, mask=key_mask)
+            attended = expanded_attention(self,q,q,key_mask,i,'memory_self',dt,attention_fn,memory=True)
             mem = mem + attended
             q = nn.LayerNorm(dtype=dt, name=f'memory_ff_norm{i}')(mem)
             mem = mem + dense(self.width, name=f'memory_ff_out{i}')(
                 nn.gelu(dense(self.memory_ff, name=f'memory_ff_in{i}')(q)))
 
-        for i in range(self.layers):
+        for i in self.block_order(self.layers, self.inherited_layers):
             q = nn.LayerNorm(dtype=dt, name=f'cross_norm{i}')(x)
-            x = x + nn.MultiHeadDotProductAttention(
-                self.heads, dtype=dt, attention_fn=attention_fn,
-                name=f'cross{i}')(q, mem, mask=key_mask)
+            x = x + expanded_attention(self,q,mem,key_mask,i,'cross',dt,attention_fn)
             q = nn.LayerNorm(dtype=dt, name=f'self_norm{i}')(x)
-            x = x + nn.MultiHeadDotProductAttention(self.heads, dtype=dt, attention_fn=attention_fn,
-                                                     name=f'self{i}')(q)
+            x = x + expanded_attention(self,q,q,None,i,'self',dt,attention_fn)
             q = nn.LayerNorm(dtype=dt, name=f'ff_norm{i}')(x)
             x = x + dense(self.width, name=f'ff_out{i}')(
-                nn.gelu(dense(self.ff, name=f'ff_in{i}')(q)))
+                nn.gelu(dense(self.new_layer_ff if self.inherited_layers and i >= self.inherited_layers
+                              and self.new_layer_ff else self.ff, name=f'ff_in{i}')(q)))
         x = nn.LayerNorm(dtype=dt, name='out_norm')(x)
         pooled = j.concatenate((x[:, 0], j.mean(x[:, 1:], axis=1)), axis=-1)
         actor = nn.gelu(dense(self.width, name='actor_hidden')(pooled))

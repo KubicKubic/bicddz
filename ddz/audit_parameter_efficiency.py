@@ -43,7 +43,7 @@ def spectrum(x):
 
 def category(name):
     if re.fullmatch(r'ff_(in|out|norm)\d+',name):return 'state_ffn'
-    if re.fullmatch(r'(self|cross)(_norm)?\d+',name):return 'state_attention'
+    if re.fullmatch(r'(self|cross)(_norm|_extra)?\d+',name):return 'state_attention'
     if name.startswith('memory_self'):return 'history_attention'
     if name.startswith('memory_ff'):return 'history_ffn'
     if name.startswith(('memory_','event_','null_memory')):return 'history_inputs'

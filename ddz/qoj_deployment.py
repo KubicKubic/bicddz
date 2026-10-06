@@ -19,7 +19,7 @@ def prepare(repo, root, models, token_file, username, base, session, python,
     worker = repo / 'deploy/qoj/worker.py'
     source_hash = hashlib.sha256((''.join(str(p.relative_to(repo)) + sha(p) for p in sources)
                                   + sha(worker)).encode()).hexdigest()
-    name = f"v5-{release['global_step']}-{source_hash[:10]}"
+    name = f"{release.get('family','V5').lower()}-{release['global_step']}-{source_hash[:10]}"
     frozen = root / 'releases' / name
     config = {
         'username': username, 'base': base, 'mode': 'match', 'tmux_session': session,

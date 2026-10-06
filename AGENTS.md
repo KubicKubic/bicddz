@@ -40,7 +40,7 @@ under `releases/`. `prepared_deployment.json` records the next prepared release;
 `deployment.json` records the release actually verified live. Inspect both and
 the active process before restarting. The portable worker is `deploy/qoj/worker.py`
 (client version 9); older V7/V8 files remain historical recovery artifacts.
-The fixed raw V5 policy uses CPU inference. The launcher sources the
+The raw V5/V6 policy uses CPU inference. The launcher sources the
 deployment's private `network.env`: the long-lived tmux server does not inherit
 the editing process's proxy variables automatically. Respect its account lock
 and inspect the current process before launching another QOJ client.
@@ -93,3 +93,36 @@ eight-rank NCCL proof and a remote check that the original trainer is gone.
 Old checkpoints and metrics remain intact. Never apply the old bridge STOP
 command to a healthy queue for ordinary submissions; this interruption and
 same-worker recovery were explicitly user-directed emergency control.
+
+## V6 attention scaling (user instruction, 2026-10-06)
+
+V6 contains 8,014,192 parameters. Its frozen queued campaign is
+`runs/v6_cluster8_attention_8m_v3`, task
+`01791255926925671076-43efbf2522974b2ea404f5035c59cac8`, scheduled after the
+current V5 segment ends at relative 50600 / global 77154. V1/V2 were superseded
+before execution with retained interrupted receipts; never run or resubmit them.
+Inspect REQUEST, SUBMISSION, engineering_READY and queue state before reporting
+V6 as training. CPU verification alone is not eight-GPU or playing-strength proof.
+Do not alter frozen pending/live dependencies or submit duplicate migrations.
+
+The preset adds early state/history layers and independent attention head banks:
+state 6 layers, total attention width 320; history 4 layers, width 256; residual
+width 192 and inherited FFNs/action heads retained. Old heads keep dimension 32.
+Preserve existing weights, Adam coordinates and coordinate ages, all environments,
+RNG, adaptive vf, EMA weights and rollout counter. PPO scale/hyperparameters and
+200000 global-update target remain the existing configuration. Before promotion,
+require CPU FP32 function preservation, real CUDA BF16 function tolerance,
+eight completed actual PPO rounds, nranks=8/NCCL, finite/legal actions, replica
+agreement and memory headroom. The old V5 successor stays queued until V6 passes;
+a failed V6 task is retained and is never automatically retried.
+
+Local GPU ownership now resides in
+`runs/local_a100_v6_follow_500_65536_v1`; consult `runs/local_a100_current.json`
+for the current process. It preserves the previous precision result/benchmark
+cache, drains V5 checkpoints, then follows an accepted V6 production pointer.
+Keep the single local controller, every-500-step BEST benchmark and idle occupation.
+QOJ code `v5-74162-77a7cbc0c4` supports background V5->V6 Policy construction,
+validation and warmup. The serving thread commits between requests/decisions;
+further V6 updates replace weights in place. Persisted V6 activation can resume
+from the frozen V5 fallback. Live weights remain V5 until V6 is actually promoted.
+See `reports/V6_ATTENTION_SCALING_20261006.md` and its JSON proof index.

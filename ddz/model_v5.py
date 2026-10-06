@@ -28,6 +28,29 @@ def prefix_features():
 PREFIX_FEATURES=prefix_features()
 
 
+def expanded_attention(model,query,key,mask,index,prefix,dtype,attention_fn,memory=False):
+    """Keep mature BF16 GEMM shapes; add a separate zero-output head bank.
+
+    Padding a learned projection with new heads changes backend GEMM reduction
+    order. Separate banks retain the exact mature computations and temperature.
+    Every head still attends to the complete unmasked sequence.
+    """
+    options=model.attention_options(memory)
+    inherited=model.inherited_memory_layers if memory else model.inherited_layers
+    if inherited and index<inherited and options['qkv_features']>model.width:
+        base=nn.MultiHeadDotProductAttention(model.heads,dtype=dtype,attention_fn=attention_fn,
+            name=f'{prefix}{index}')(query,key,mask=mask)
+        width=options['qkv_features']-model.width
+        heads=options['num_heads']-model.heads
+        if heads<=0 or width//heads!=model.width//model.heads or width%heads:
+            raise ValueError('Expanded attention bank must preserve inherited head dimensions')
+        added=nn.MultiHeadDotProductAttention(heads,qkv_features=width,out_features=model.width,
+            dtype=dtype,attention_fn=attention_fn,name=f'{prefix}_extra{index}')(query,key,mask=mask)
+        return base+added
+    return nn.MultiHeadDotProductAttention(**options,dtype=dtype,attention_fn=attention_fn,
+        name=f'{prefix}{index}')(query,key,mask=mask)
+
+
 def fused_full_attention(query,key,value,mask=None,**kwargs):
     """cuDNN full attention with exact prefix lengths and masked even padding.
 
@@ -57,6 +80,38 @@ class InteractionMoveTransformer(nn.Module):
     interaction_width: int = 64
     action_hidden: int = 96
     attention_backend: str = 'standard'
+    # Widen attention head banks without changing the residual feature basis.
+    # Keeping head_dim fixed permits an exact V5 warm start.
+    attention_width: int = 0
+    attention_heads: int = 0
+    memory_attention_width: int = 0
+    memory_attention_heads: int = 0
+    inherited_layers: int = 0
+    inherited_memory_layers: int = 0
+    new_layer_ff: int = 0
+
+    def attention_options(self, memory=False):
+        width = (self.memory_attention_width if memory else self.attention_width) or self.width
+        heads = (self.memory_attention_heads if memory else self.attention_heads) or self.heads
+        if width <= 0 or heads <= 0 or width % heads:
+            raise ValueError('Attention width must be a positive multiple of heads')
+        return dict(num_heads=heads, qkv_features=width, out_features=self.width)
+
+    @staticmethod
+    def block_order(count, inherited):
+        if not inherited:
+            return tuple(range(count))
+        if not 0 < inherited <= count:
+            raise ValueError('Invalid inherited block count')
+        # Insert new identity-initialized blocks after early inherited blocks;
+        # retain the exact ordering of every old block.
+        result=[]
+        for i in range(inherited):
+            result.append(i)
+            if inherited+i<count:
+                result.append(inherited+i)
+        result.extend(range(2*inherited,count))
+        return tuple(result)
 
     @nn.compact
     def __call__(self, obs, memory_length=HISTORY):
@@ -98,27 +153,23 @@ class InteractionMoveTransformer(nn.Module):
         # masked; padded queries are never read by the current-hand tokens.
         key_mask = valid[:, None, None, :]
         mem = nn.LayerNorm(dtype=dt, name='memory_norm')(mem)
-        for i in range(self.memory_layers):
+        for i in self.block_order(self.memory_layers, self.inherited_memory_layers):
             q = nn.LayerNorm(dtype=dt, name=f'memory_self_norm{i}')(mem)
-            attended = nn.MultiHeadDotProductAttention(
-                self.heads, dtype=dt, attention_fn=attention_fn,
-                name=f'memory_self{i}')(q, q, mask=key_mask)
+            attended = expanded_attention(self,q,q,key_mask,i,'memory_self',dt,attention_fn,memory=True)
             mem = mem + attended
             q = nn.LayerNorm(dtype=dt, name=f'memory_ff_norm{i}')(mem)
             mem = mem + dense(self.width, name=f'memory_ff_out{i}')(
                 nn.gelu(dense(self.memory_ff, name=f'memory_ff_in{i}')(q)))
 
-        for i in range(self.layers):
+        for i in self.block_order(self.layers, self.inherited_layers):
             q = nn.LayerNorm(dtype=dt, name=f'cross_norm{i}')(x)
-            x = x + nn.MultiHeadDotProductAttention(
-                self.heads, dtype=dt, attention_fn=attention_fn,
-                name=f'cross{i}')(q, mem, mask=key_mask)
+            x = x + expanded_attention(self,q,mem,key_mask,i,'cross',dt,attention_fn)
             q = nn.LayerNorm(dtype=dt, name=f'self_norm{i}')(x)
-            x = x + nn.MultiHeadDotProductAttention(self.heads, dtype=dt, attention_fn=attention_fn,
-                                                     name=f'self{i}')(q)
+            x = x + expanded_attention(self,q,q,None,i,'self',dt,attention_fn)
             q = nn.LayerNorm(dtype=dt, name=f'ff_norm{i}')(x)
             x = x + dense(self.width, name=f'ff_out{i}')(
-                nn.gelu(dense(self.ff, name=f'ff_in{i}')(q)))
+                nn.gelu(dense(self.new_layer_ff if self.inherited_layers and i >= self.inherited_layers
+                              and self.new_layer_ff else self.ff, name=f'ff_in{i}')(q)))
         x = nn.LayerNorm(dtype=dt, name='out_norm')(x)
         pooled = j.concatenate((x[:, 0], j.mean(x[:, 1:], axis=1)), axis=-1)
         actor = nn.gelu(dense(self.width, name='actor_hidden')(pooled))

@@ -58,6 +58,7 @@ def main():
     warm=[r for r in current if r['iteration']>current[0]['iteration']+3]
     if not warm:warm=current
     proof={'passed':True,'queue_id':task_id,'nranks':8,'NCCL_evidence':nccl[:8],
+           'parameters':read(phase/'training'/'status.json')['parameters'],
            'global_envs':cfg['envs'],'global_minibatch':cfg['ppo']['minibatch'],
            'fresh_decisions_per_update':expected_decisions,'tested_updates':len(current),
            'fresh_decisions':sum(r['fresh_decisions'] for r in current),
