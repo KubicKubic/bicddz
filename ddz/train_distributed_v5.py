@@ -94,6 +94,10 @@ def main():
     lock=(out/'train.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     if (out/'latest.msgpack').exists() and not args.resume:raise RuntimeError('Explicit resume required')
     saved=serialization.msgpack_restore((out/'latest.msgpack').read_bytes()) if args.resume else None
+    if saved and cfg.get('model_family')=='V6':
+        from .optimizer_efficiency import V6_NEW_COORDINATE_WARMUP_STEPS
+        if saved['runtime'].get('new_coordinate_warmup_steps')!=V6_NEW_COORDINATE_WARMUP_STEPS:
+            raise RuntimeError('Unregistered V6 optimizer warmup state; explicit migration required')
     if saved and (saved['config']!=cfg or saved['runtime']['source_sha256']!=source_sha):
         raise RuntimeError('Distributed resume identity mismatch')
     jax.config.update('jax_compilation_cache_dir',str(out.parent/'jax_cache'))

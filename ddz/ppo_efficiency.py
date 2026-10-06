@@ -250,6 +250,7 @@ def make_update(model,cfg,memory_length=88,axis_name=None):
         evaluated=j.sum(m['evaluated']);planned=len(indices)
         result={k:j.sum(v)/j.maximum(evaluated,1) for k,v in m.items() if k not in ('applied','evaluated','nonfinite')}
         result.update(applied=j.sum(m['applied'])/planned,evaluated_fraction=evaluated/planned,
+            kl_max=j.max(m['kl']),kl_early_stop=j.any(m['kl']>cfg['target_kl']).astype(j.float32),
             nonfinite=j.sum(m['nonfinite']),evaluated_minibatches=evaluated,
             applied_minibatches=j.sum(m['applied']),
             actor_eligible_fraction=j.mean(actor_mask),value_eligible_fraction=j.mean(value_mask),

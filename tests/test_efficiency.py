@@ -177,6 +177,7 @@ def test_kl_blocks_current_update_and_really_skips_later_gradient_computation():
     assert int(updated.step)==0 and int(m['applied_minibatches'])==0
     assert int(m['evaluated_minibatches'])==1 and len(calls)==1
     assert float(m['kl'])>.03 and float(m['evaluated_fraction'])==pytest.approx(1/12)
+    assert float(m['kl_early_stop'])==1 and float(m['kl_max'])==float(m['kl'])
     np.testing.assert_array_equal(updated.params['w'],params['w'])
 
 

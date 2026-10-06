@@ -17,7 +17,7 @@ from flax.training.train_state import TrainState
 from flax.traverse_util import flatten_dict,unflatten_dict
 from . import env_v4 as env
 from .model_efficiency import EfficientMoveTransformer
-from .optimizer_efficiency import coordinate_births,birth_corrected_adam,sampled_lr
+from .optimizer_efficiency import coordinate_births,birth_corrected_adam,sampled_lr,V6_NEW_COORDINATE_WARMUP_STEPS
 from .upgrade_v5 import grow_optimizer
 from .ppo_efficiency import ArenaState,make_rollout,make_update,make_diagnostic
 from .train_v2 import atomic,checkpoint
@@ -52,8 +52,9 @@ def create(cfg,source):
     p=cfg['ppo']
     # Keep the original Adam/decay/schedule state schema for exact migration.
     # The actual learning rate is passed by fresh-data progress to make_update.
+    warmup=V6_NEW_COORDINATE_WARMUP_STEPS if cfg.get('model_family')=='V6' else 0
     tx=optax.chain(optax.clip_by_global_norm(p['max_grad_norm']),
-        optax.chain(birth_corrected_adam(births),optax.add_decayed_weights(p['weight_decay']),
+        optax.chain(birth_corrected_adam(births,warmup),optax.add_decayed_weights(p['weight_decay']),
                     optax.scale_by_learning_rate(lambda _:1.)))
     ts=TrainState.create(apply_fn=model.apply,params=params,tx=tx)
     template=serialization.to_state_dict(ts)

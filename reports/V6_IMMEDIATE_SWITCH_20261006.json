@@ -1,0 +1,212 @@
+{
+  "state": "eight_gpu_verified_and_training",
+  "root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3",
+  "queue_id": "01791265643288461199-667d0d7633e34e678fb802e8aa160455",
+  "parameters": 8014192,
+  "source_pause": {
+    "retained_checkpoint_iteration": 50000,
+    "retained_global_iteration": 76554,
+    "interrupted_queue_id": "01791251898723070104-bf038679a28b47b3a795b636e6a50687",
+    "remote_training_pid": 3588522,
+    "retained_checkpoint_sha256": "c8c1d3acea1757e175cf9e6101cfa3b66af0193e45d8bf092a9180bcff30b1dc",
+    "source_status_sha256": "e2b9c65e0cacb628bdaa96e5f3fd2fcc3b5860e639ad5d063f93aeaf387eecd0",
+    "source_health_proof": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v1/source_health_proof.json",
+    "last_logged_iteration": 50059,
+    "unsaved_logged_updates_not_resumed": 59,
+    "remote_process_absence_required_before_migration": true,
+    "time": 1791264220.0358663
+  },
+  "resource": {
+    "passed": true,
+    "rows": [
+      "0, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "1, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "2, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "3, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "4, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "5, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "6, NVIDIA A100-SXM4-80GB, 81920, 0",
+      "7, NVIDIA A100-SXM4-80GB, 81920, 0"
+    ],
+    "estimated_peak_bytes": 50496191488,
+    "time": 1791264229.8312986
+  },
+  "new_control_tests": {
+    "passed": true,
+    "passed_tests": 17,
+    "result": [
+      "16 passed in 2.58s",
+      "1 KL diagnostic test passed in 13.42s"
+    ],
+    "new_coordinate_warmup_optimizer_steps": 1024,
+    "mature_coordinate_updates_exact_under_matched_jit": true,
+    "cold_restore_retains_adam_warmup_age": true,
+    "source_kl_gate_unchanged": true,
+    "source_exit_wait_and_active_pid_fix": true,
+    "files_sha256": {
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/scale_architecture_v6.py": "d95c3d294c4bd0472d6c12b8b5f8ef4e43cf03f1b9fd9eb7882fef918f2f1618",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/optimizer_efficiency.py": "b9157d7b4e51144a637a72f85dea8765e45aa4b53608fbc53a9378170eeea31a",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/train_efficiency.py": "b17f7e7102de2658be553b6d48c19c133f7d6005cb9e01db6b53e70a8370a8a7",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/train_distributed_v5.py": "a9aa4278475d2526eb8bda85522dbc1b6d3662900d8211c5052f76d7f28d9a39",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/ppo_efficiency.py": "0c9f9e41c60c22076beba10939314e866a8153186458f586bb582e957125f437",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_v6_coordinate_warmup.py": "07082c3a8ebbe4be69095fa6b60a64bf45baa1a522af8f4b4b80304be7ffcad3",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_v6_immediate.py": "261280f7bf598cc376167ebc1bc1995cd708b3494c895c125d4f8a3abff0fbd1",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_efficiency.py": "635c5791109c51106f0ea76ce769e285e14c157c12964a019f44b88c5c0e0a56"
+    },
+    "time": 1791265626.9317627
+  },
+  "formal_acceptance_pending": false,
+  "time": 1791266731.4698446,
+  "new_coordinate_warmup_optimizer_steps": 1024,
+  "latest_source_pause": {
+    "retained_checkpoint_iteration": 50000,
+    "retained_global_iteration": 76554,
+    "interrupted_queue_id": "01791265392930000789-95d0ea5fb5eb48b5b150ccc1456fab21",
+    "remote_training_pid": 3694944,
+    "retained_checkpoint_sha256": "c8c1d3acea1757e175cf9e6101cfa3b66af0193e45d8bf092a9180bcff30b1dc",
+    "source_status_sha256": "ee872bdd01c40346498d51a93b12ff9f6b315f27f7f51a34f63be5ec15f5d590",
+    "source_health_proof": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/source_health_proof.json",
+    "last_logged_iteration": 50002,
+    "unsaved_logged_updates_not_resumed": 2,
+    "remote_process_absence_required_before_migration": true,
+    "time": 1791265642.1796882
+  },
+  "failed_first_candidate": {
+    "error": "RuntimeError('Scale, LR, health, optimizer acceptance or replica gate failed')",
+    "time": 1791265057.3406737,
+    "automatic_retry": false
+  },
+  "failed_source_exit_item": {
+    "error": "RuntimeError('Paused source process is still alive; no competing training')",
+    "time": 1791265400.6301117,
+    "automatic_retry": false
+  },
+  "engineering_proof": {
+    "passed": true,
+    "updates": 8,
+    "timed_updates": 5,
+    "decisions_per_second": 81551.86026141133,
+    "eligible_decisions_per_second": 77982.01424971847,
+    "rollout_seconds_mean": 8.468149729445576,
+    "train_seconds_mean": 42.81177535131574,
+    "actor_eligible_fraction_mean": 0.9562260627746582,
+    "value_explained_variance_mean": 0.7138774156570434,
+    "kl_max": 0.0057973237708210945,
+    "clip_fraction_mean": 0.023642777651548385,
+    "gpu_peak_memory_bytes": 33208413952,
+    "nranks": 8,
+    "invalid_actions": 0,
+    "nonfinite": 0,
+    "replica_parameter_max_difference": 0,
+    "parameters": 8014192,
+    "NCCL_evidence": [
+      "job-vz9agqd9t0tr-master-0:3700518:3700859 [3] NCCL INFO ncclCommInitRankConfig comm 0x7f76341b8190 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 67000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700858 [2] NCCL INFO ncclCommInitRankConfig comm 0x7f7634133d00 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 65000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700857 [1] NCCL INFO ncclCommInitRankConfig comm 0x7f76340af460 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 63000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700863 [7] NCCL INFO ncclCommInitRankConfig comm 0x7f76343c91d0 rank 7 nranks 8 cudaDev 7 nvmlDev 7 busId a7000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700856 [0] NCCL INFO ncclCommInitRankConfig comm 0x7f763402e280 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 61000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700860 [4] NCCL INFO ncclCommInitRankConfig comm 0x7f763423c620 rank 4 nranks 8 cudaDev 4 nvmlDev 4 busId a1000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700861 [5] NCCL INFO ncclCommInitRankConfig comm 0x7f76342c0a10 rank 5 nranks 8 cudaDev 5 nvmlDev 5 busId a3000 commId 0xb35b0b71502921ec - Init START",
+      "job-vz9agqd9t0tr-master-0:3700518:3700862 [6] NCCL INFO ncclCommInitRankConfig comm 0x7f7634344df0 rank 6 nranks 8 cudaDev 6 nvmlDev 6 busId a5000 commId 0xb35b0b71502921ec - Init START"
+    ],
+    "log": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/engineering.log",
+    "global_envs": 65536,
+    "global_minibatch": 32768,
+    "cuda_training_signatures": {
+      "backend": "gpu",
+      "device": "NVIDIA A100-SXM4-80GB",
+      "passed": true,
+      "signatures": [
+        {
+          "compiled_temp_bytes": 26297237952,
+          "finite": true,
+          "gradient_norm": 1041.559326171875,
+          "loss": 13.961862564086914,
+          "memory_length": 88,
+          "peak_bytes_in_use": 26983478016,
+          "per_gpu_minibatch": 4096,
+          "seconds": 45.79177504405379
+        },
+        {
+          "compiled_temp_bytes": 11551339456,
+          "finite": true,
+          "gradient_norm": 521.1963500976562,
+          "loss": 12.170675277709961,
+          "memory_length": 192,
+          "peak_bytes_in_use": 26983478016,
+          "per_gpu_minibatch": 1024,
+          "seconds": 42.223611015826464
+        }
+      ]
+    },
+    "time": 1791266582.7124488
+  },
+  "migration_receipt": {
+    "iteration": 50000,
+    "global_iteration": 76554,
+    "source_checkpoint_sha256": "c8c1d3acea1757e175cf9e6101cfa3b66af0193e45d8bf092a9180bcff30b1dc",
+    "migrated_checkpoint_sha256": "02039a143fd0ab103b396426f477054b00f7e1f271f8e41267e944db908dbcfe",
+    "parameters": 8014192,
+    "function_probe": {
+      "raw": {
+        "fp32": {
+          "states": 128,
+          "body_kl_max": 0.0,
+          "body_kl_mean": 0.0,
+          "complete_action_flips": 0,
+          "selected_complete_logprob_max_error": 0.0,
+          "value_max_error": 0.0
+        }
+      },
+      "ema": {
+        "fp32": {
+          "states": 128,
+          "body_kl_max": 0.0,
+          "body_kl_mean": 0.0,
+          "complete_action_flips": 0,
+          "selected_complete_logprob_max_error": 0.0,
+          "value_max_error": 0.0
+        }
+      }
+    },
+    "env_rng_arena_clocks_retained": true,
+    "inherited_weights_and_adam_coordinates_bit_exact": true,
+    "ema_updates_preserved": 11000,
+    "new_coordinate_adam_age_starts_at": 5197652,
+    "time": 1791265742.4269753
+  },
+  "production_pointer": {
+    "state": "running",
+    "run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "nranks": 8,
+    "global_iteration": 76562,
+    "proof": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/engineering_READY.json",
+    "time": 1791266582.7256691
+  },
+  "max_minibatch_kl": 0.02331901527941227,
+  "optimizer_acceptance_min": 1.0,
+  "kl_stopped_rounds": 0,
+  "all_eight_ema_replicas_synchronized": true,
+  "model_bundle": {
+    "family": "V6",
+    "policy_kind": "raw",
+    "relative_step": 50008,
+    "global_step": 76562,
+    "parameters": 8014192,
+    "ema_decay": 0.999,
+    "ema_rollout_updates": 11008,
+    "optimizer_step": 5200212,
+    "training_config": "config.json",
+    "raw_policy": "policy.msgpack",
+    "ema_policy": "ema_policy.msgpack",
+    "resume_checkpoint": "latest_checkpoint.msgpack",
+    "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "files_sha256": {
+      "config.json": "db65eb1930e1df8d370f7617b4b177891153815af846e3573f81ca6264e89045",
+      "policy.msgpack": "8259f4848e6bd443d6e3340c322cfbf7e9d8adda3cbe5f4682b31736939e39f6",
+      "ema_policy.msgpack": "359e9c209d722cfb7997df9730f6de06eb1c6dc53e2b6e6722572f3fe96bb192",
+      "latest_checkpoint.msgpack": "5b4dc63697dd18562845379c4e0cb6adc857cb52f4dd861699126faa25308d0f"
+    }
+  },
+  "previous_model_bundle_retained": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/model_exports/previous_models_before_v6_76562_20261006"
+}

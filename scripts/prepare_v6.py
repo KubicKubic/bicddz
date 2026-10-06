@@ -14,7 +14,7 @@ from ddz.upgrade_v6 import revised_config
 from ddz.scale_rollout_campaign import read,write,sha
 
 
-def supersede_pending(queue,task_id,new_root):
+def supersede_pending(queue,task_id,new_root,reason='USER_REQUESTED_V6_ARCHITECTURE_AUDIT_FIXES'):
     """Retain a cancellation receipt for one reviewed, unclaimed V6 item."""
     pending=queue/'pending'/(task_id+'.json');record=read(pending)
     argv=shlex.split(record['command'])
@@ -25,10 +25,10 @@ def supersede_pending(queue,task_id,new_root):
         raise RuntimeError('Superseded V6 pending item identity differs')
     old=Path(argv[argv.index('--root')+1])
     write(queue/'interrupted'/pending.name,{**record,'status':'interrupted','finished_at_ns':time.time_ns(),
-        'exit_code':None,'reason':'USER_REQUESTED_V6_ARCHITECTURE_AUDIT_FIXES','replacement_root':str(new_root)})
+        'exit_code':None,'reason':reason,'replacement_root':str(new_root)})
     pending.unlink()
     write(old/'SUPERSEDED.json',{'queue_id':task_id,'replacement_root':str(new_root),
-        'reason':'audited checkpoint restore, CUDA backward/masks, publication and continuation gates',
+        'reason':reason,
         'never_started':True,'time':time.time()})
 
 

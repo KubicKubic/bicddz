@@ -96,11 +96,26 @@ same-worker recovery were explicitly user-directed emergency control.
 
 ## V6 attention scaling (user instruction, 2026-10-06)
 
-V6 contains 8,014,192 parameters. Its frozen queued campaign is
-`runs/v6_cluster8_attention_8m_v4`, task
-`01791261485793277820-a18907712e714ca886d64606d966aa10`, scheduled after the
-current V5 segment ends at relative 50600 / global 77154. V1/V2/V3 were superseded
+V6 contains 8,014,192 parameters. The latest user override is “现在就切换”.
+Its frozen immediate campaign is `runs/v6_cluster8_attention_8m_now_v3`, task
+`01791265643288461199-667d0d7633e34e678fb802e8aa160455`, resuming the complete
+V5 checkpoint at relative 50000 / global 76554. V1/V2/V3/V4 were superseded
 before execution with retained interrupted receipts; never run or resubmit them.
+The active V5 segment was interrupted under explicit user direction and the
+same remote queue allocation was recovered. Keep the 59 unsaved logged rounds
+in `source_metrics_before_pause.jsonl`; exclude them from resumed metrics.
+The checksum-bound pause receipt and actual remote process absence gate replace
+the normal completed-boundary gate. One V5 fallback to relative 51000 remains
+queued until V6 passes; never cancel it before actual eight-GPU acceptance.
+The first immediate candidate failed the unchanged optimizer-acceptance gate
+after a long-history round stopped at 4.1% of minibatches. V6 now warms newly
+born Adam coordinates over 1024 applied optimizer steps; mature coordinates
+retain their updates. Save `runtime.new_coordinate_warmup_steps=1024` and reject
+unregistered V6 resumes. EMA remains on its separate completed-rollout clock.
+The second item stopped at the source-exit gate before any V6 training. Preserve
+both failed items. The third item's control fix derives the actual child PID
+from the active NCCL log and waits for source exit before checking snapshots
+and GPU memory; stale source status PIDs must never authorize overlapping jobs.
 Inspect REQUEST, SUBMISSION, engineering_READY and queue state before reporting
 V6 as training. CPU verification alone is not eight-GPU or playing-strength proof.
 Do not alter frozen pending/live dependencies or submit duplicate migrations.

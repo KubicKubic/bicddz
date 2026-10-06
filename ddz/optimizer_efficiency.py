@@ -7,6 +7,8 @@ from flax.traverse_util import flatten_dict, unflatten_dict
 from .optimizer_v5 import new_coordinate_mask
 from optax.tree_utils import tree_bias_correction
 
+V6_NEW_COORDINATE_WARMUP_STEPS = 1024
+
 
 def coordinate_births(params, source_params, origin, fork_step):
     legacy = new_coordinate_mask(params, origin['source_shapes']) if origin else None
@@ -24,7 +26,9 @@ def coordinate_births(params, source_params, origin, fork_step):
     return unflatten_dict(births)
 
 
-def birth_corrected_adam(births):
+def birth_corrected_adam(births,warmup_steps=0):
+    if not isinstance(warmup_steps,int) or warmup_steps<0:
+        raise ValueError('Coordinate warmup must be a nonnegative integer')
     base = optax.scale_by_adam()
     def update(grads, state, params=None):
         updates, new = base.update(grads, state, params)
@@ -35,6 +39,10 @@ def birth_corrected_adam(births):
             mu_hat = tree_bias_correction(mu, .9, age)
             nu_hat = tree_bias_correction(nu, .999, age)
             corrected = mu_hat / (j.sqrt(nu_hat) + 1e-8)
+            if warmup_steps:
+                # Mature inherited coordinates have factor exactly one. Only
+                # newly born coordinates gradually open their residual paths.
+                corrected=corrected*j.minimum(age/j.float32(warmup_steps),1.)
             return corrected if isinstance(birth, int) else j.where(birth > 0, corrected, u)
         return jax.tree_util.tree_map(correct, updates, new.mu, new.nu, births), new
     return optax.GradientTransformation(base.init, update)

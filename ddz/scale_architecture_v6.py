@@ -28,6 +28,8 @@ def migrate_checkpoint(saved, cfg, train, source_hash, source_path):
         saved['config']['model'],cfg['model'])}
     result['runtime']['coordinate_births']=grow_births(train['params'],saved['train']['params'],
         inherited_births(saved['train']['params'],saved['runtime']),int(saved['train']['step']))
+    from .optimizer_efficiency import V6_NEW_COORDINATE_WARMUP_STEPS
+    result['runtime']['new_coordinate_warmup_steps']=V6_NEW_COORDINATE_WARMUP_STEPS
     result['runtime'].update(source_sha256=source_hash,source_checkpoint=str(source_path),
         source_iteration=saved['iteration'],source_adam_step=int(saved['train']['step']))
     result['runtime'].setdefault('config_migrations',[]).append({
@@ -78,6 +80,54 @@ def expected_followup(queue,old,steps):
         (queue/'interrupted'/path.name).exists()):
         raise RuntimeError('Old continuation identity/boundary differs')
     return record['id']
+
+
+def wait_for_source_exit(pids,seconds=0,proc_root=Path('/proc')):
+    if not isinstance(seconds,int) or not 0<=seconds<=300:
+        raise ValueError('Source exit wait must be an integer from 0 to 300 seconds')
+    deadline=time.monotonic()+seconds
+    while True:
+        alive=[]
+        for pid in pids:
+            process=proc_root/str(pid)/'cmdline'
+            try:
+                if process.read_bytes():alive.append(pid)
+            except FileNotFoundError:pass
+        if not alive:return
+        if time.monotonic()>=deadline:
+            raise RuntimeError('Paused source process is still alive; no competing training')
+        time.sleep(2)
+
+
+def verify_source(request,old_run):
+    """Accept a normal boundary or a checksum-bound, user-directed pause."""
+    status=read(old_run/'status.json');at=request['at_iteration']
+    pause_path=request.get('source_pause_receipt')
+    if pause_path:
+        pause=read(pause_path)
+        claim=read(Path(request['queue'])/'interrupted'/(request['active_source_queue_id']+'.json'))
+        wait_for_source_exit((pause['remote_training_pid'],claim['task_pid']),
+                             request.get('source_exit_wait_seconds',0))
+        status=read(old_run/'status.json')
+        if (claim['status']!='interrupted' or claim['id']!=request['active_source_queue_id'] or
+            pause['interrupted_queue_id']!=claim['id'] or
+            pause['retained_checkpoint_iteration']!=at or
+            sha(old_run/'latest.msgpack')!=pause['retained_checkpoint_sha256'] or
+            sha(old_run/'status.json')!=pause['source_status_sha256'] or
+            status['nranks']!=8 or status['iteration']<at):
+            raise RuntimeError('Reviewed source pause/checkpoint identity differs')
+        proof=read(pause['source_health_proof'])
+        if (proof.get('accepted_checkpoint_iteration')!=at or
+            sha(proof['source_log'])!=proof['source_log_sha256']):
+            raise RuntimeError('Paused source log/iteration binding differs')
+    else:
+        proof=read(old_run.parent/'queue_job_status.json')
+        if status['state']!='completed' or status['iteration']!=at or status['nranks']!=8:
+            raise RuntimeError('Expected completed source boundary differs')
+    if (not proof.get('passed') or proof.get('nranks')!=8 or not proof.get('NCCL_evidence') or
+        proof.get('queue_id')!=request['active_source_queue_id']):
+        raise RuntimeError('Expected source queue boundary lacks accepted eight-rank NCCL proof')
+    return proof
 
 
 def function_probe(saved,migrated,precision_modes=('fp32','bf16')):
@@ -144,12 +194,8 @@ def main():
     for name,expected in request['files_sha256'].items():
         if sha(name)!=expected:raise RuntimeError('Frozen dependency changed: '+name)
     old=Path(request['old_root']);old_run=old/'production/training'
-    status=read(old_run/'status.json');proof=read(old/'production/queue_job_status.json')
     at=request['at_iteration']
-    if (status['state']!='completed' or status['iteration']!=at or status['nranks']!=8 or
-        not proof.get('passed') or proof.get('nranks')!=8 or not proof.get('NCCL_evidence') or
-        proof.get('queue_id')!=request['active_source_queue_id']):
-        raise RuntimeError('Expected source queue boundary lacks accepted eight-rank NCCL proof')
+    verify_source(request,old_run)
     phase=root/'production';run=phase/'training'
     if run.exists():raise RuntimeError('Migration already exists; explicit review required before any retry')
     query=subprocess.run(['nvidia-smi','--query-gpu=index,name,memory.total,memory.used',
