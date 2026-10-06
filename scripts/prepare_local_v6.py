@@ -17,9 +17,30 @@ def running(pid):
     return path.exists() and path.read_text().split(') ',1)[1][0]!='Z'
 
 
+def reviewed_entropy_handoff(owner,status,campaign):
+    """Review an old registry failure only after its evaluation completed."""
+    if not campaign or status.get('state')!='failed_waiting_review':return False
+    if 'Unregistered sample-selection handoff' not in status.get('error',''):return False
+    old=Path(owner['root']);root=Path(campaign)
+    evidence=read(root/'engineering_READY.json');request=read(root/'REQUEST.json')
+    handoff=read(old/'architecture_handoff.json');source=Path(handoff['new_run'])
+    from ddz.entropy_campaign import revised_config,TRANSITION
+    if (request.get('transition')!=TRANSITION or
+        Path(request['old_root']).resolve()!=source.parent.parent.resolve() or
+        read(root/'production/config.json')!=revised_config(read(source/'config.json')) or
+        not evidence.get('passed') or evidence.get('nranks')!=8 or not evidence.get('NCCL_evidence') or
+        evidence.get('random_action_prob')!=0. or abs(evidence.get('entropy_coefficient',0.)-.01)>1e-12 or
+        not (old/f"step_{handoff['initial_step']:07d}/BEST/summary.json").exists() or
+        any((p/'FAILED.json').exists() for p in old.glob('step_*'))):
+        raise RuntimeError('Registry review requires accepted entropy handoff and completed, nonfailed evaluation')
+    return True
+
+
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--root',type=Path,required=True)
-    ap.add_argument('--cpu-proof',type=Path,required=True);args=ap.parse_args()
+    ap.add_argument('--cpu-proof',type=Path,required=True)
+    ap.add_argument('--wait-idle',action='store_true')
+    ap.add_argument('--reviewed-handoff',type=Path);args=ap.parse_args()
     repo=Path(__file__).resolve().parents[1];root=args.root.resolve()
     if root.exists():raise RuntimeError('Controller release already exists; inspect retained state')
     proof=read(args.cpu_proof)
@@ -29,8 +50,17 @@ def main():
     pointer=repo/'runs/local_a100_current.json';owner=read(pointer)
     old_cfg=read(owner['config']);old=Path(owner['root'])
     status=read(old/'status.json')
-    if status['state']!='idle_gpu_occupied':
+    deadline=time.monotonic()+3600
+    while args.wait_idle and status['state'] not in ('idle_gpu_occupied','failed_waiting_review'):
+        if read(pointer)['watcher_pid']!=owner['watcher_pid']:
+            raise RuntimeError('Local owner changed while waiting; do not replace another controller')
+        if time.monotonic()>deadline:raise RuntimeError('Idle handoff wait expired; active evaluation preserved')
+        time.sleep(2);status=read(old/'status.json')
+    reviewed=reviewed_entropy_handoff(owner,status,args.reviewed_handoff)
+    if status['state']!='idle_gpu_occupied' and not reviewed:
         raise RuntimeError('Wait for current local evaluation to finish before controller handoff')
+    for name,expected in proof.get('files_sha256',{}).items():
+        if sha(Path(name))!=expected:raise RuntimeError('Verified dependency changed during idle wait: '+name)
     if not read(Path(old_cfg['precision']['root'])/'precision_result.json')['state']=='complete':
         raise RuntimeError('Preserve the active precision evaluation before handoff')
     pid=owner['watcher_pid'];cmd=Path(f'/proc/{pid}/cmdline').read_bytes()
@@ -44,6 +74,8 @@ def main():
     old_run=regular['run_dir']
     actual=read(repo/'runs/production_current.json')['run']
     regular.update(output=str(root),code_dir=str(root/'code'),run_dir=actual)
+    if args.reviewed_handoff and Path(actual).parent.parent.resolve()==args.reviewed_handoff.resolve():
+        regular['initial_steps']=[read(Path(actual)/'latest.json')['iteration']]
     history=root/'historical_ratings.json'
     shutil.copyfile(old/'ratings.json',history);regular['history_ratings']=str(history)
     # Cache only completed immutable results; never abort or inherit half an evaluation.
@@ -88,6 +120,7 @@ def main():
              'old_root':str(old),'new_root':str(root),'old_run':old_run,'current_training_run':actual,
              'production_handoff':'drain completed results then follow verified eight-rank production transitions',
              'idle_occupation_preserved':True,'time':time.time()}
+    if reviewed:receipt['reviewed_registry_failure']=status['error']
     write(root/'migration_receipt.json',receipt)
     update={**owner,'watcher_pid':child.pid,'root':str(root),'config':str(root/'controller_CONFIG.json'),
         'status':str(root/'status.json'),'regular_curve':str(root/'douzero_best_curve.png'),

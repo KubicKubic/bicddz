@@ -29,10 +29,16 @@ def follow_architecture(cfg,regular,root):
         campaign=run.parent.parent
         registration=read(campaign/'REQUEST.json');migration=read(campaign/'migration_receipt.json')
         exploration=registration.get('transition')=='random_action_02_and_advantage_trim'
+        model_entropy=registration.get('transition')=='model_entropy_01_without_random_actions'
         if exploration:
             from .exploration_campaign import revised_config
             if proof.get('random_action_prob')!=.02:
                 raise RuntimeError('Exploration handoff lacks its accepted probability proof')
+        elif model_entropy:
+            from .entropy_campaign import revised_config
+            if (proof.get('random_action_prob')!=0. or
+                abs(proof.get('entropy_coefficient',0.)-.01)>1e-12):
+                raise RuntimeError('Model-entropy handoff lacks its accepted configuration proof')
         else:
             from .trim_rollout_campaign import revised_config
         try:expected=revised_config(original)
@@ -64,7 +70,7 @@ def follow_architecture(cfg,regular,root):
         first=read(run/'latest.json')['iteration']
         write(receipt,{'old_run':regular['run_dir'],'new_run':str(run),
             'initial_step':first,'proof':current['proof'],
-            'transition':registration['transition'] if trimming and exploration else
+            'transition':registration['transition'] if trimming and (exploration or model_entropy) else
                          'advantage_trim' if trimming else 'V5_to_V6','time':time.time()})
     result={**regular,'run_dir':str(run),'initial_steps':[first]}
     result['protocol']={**regular['protocol'],'architecture_transition':{

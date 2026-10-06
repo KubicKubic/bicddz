@@ -65,6 +65,7 @@ def main():
            'parameters':read(phase/'training'/'status.json')['parameters'],
            'random_action_prob':cfg['ppo'].get('random_action_prob',0.),
            'adv_keep_fraction':cfg['ppo'].get('adv_keep_fraction',1.),
+           'entropy_coefficient':current[-1]['entropy_coef'],
            'global_envs':cfg['envs'],'global_minibatch':cfg['ppo']['minibatch'],
            'fresh_decisions_per_update':expected_decisions,'tested_updates':len(current),
            'fresh_decisions':sum(r['fresh_decisions'] for r in current),

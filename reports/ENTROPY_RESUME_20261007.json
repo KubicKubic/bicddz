@@ -1,0 +1,113 @@
+{
+  "state": "accepted_and_long_term_training_running",
+  "random_action_prob": 0.0,
+  "previous_random_action_prob": 0.02,
+  "effective_entropy_coefficient": 0.01,
+  "previous_effective_entropy_coefficient": 0.002,
+  "entropy_multiplier": 5,
+  "sampling": "original model policy and original conditional entropy path",
+  "adv_keep_fraction": 0.5,
+  "source_relative_step": 50800,
+  "source_global_step": 77354,
+  "accepted_relative_step": 50808,
+  "accepted_global_step": 77362,
+  "global_target": 200000,
+  "unsaved_source_rounds_retained_not_resumed": 1,
+  "retained_state": {
+    "source_checkpoint_sha256": "b0972f7c23ea0f8fc6d4e1913e93850d867848c94eadce752b75bad6f6d7e9cb",
+    "migrated_checkpoint_sha256": "b00335daa125bb3fc6534d4fd6ac68d545317a7d84581ee6b6f0168fa1807776",
+    "iteration": 50800,
+    "weights_adam_env_rng_vf_ema_retained": true,
+    "ema_updates": 11800,
+    "optimizer_step": 5374281,
+    "time": 1791303455.6658928
+  },
+  "cpu_tests": 46,
+  "engineering_proof": {
+    "passed": true,
+    "updates": 8,
+    "timed_updates": 4,
+    "decisions_per_second": 187364.9209954578,
+    "eligible_decisions_per_second": 179161.58797035192,
+    "rollout_seconds_mean": 8.372894002124667,
+    "train_seconds_mean": 13.84639745252207,
+    "actor_eligible_fraction_mean": 0.956217348575592,
+    "value_explained_variance_mean": 0.7109811305999756,
+    "kl_max": 0.0032605305314064026,
+    "clip_fraction_mean": 0.011961329961195588,
+    "gpu_peak_memory_bytes": 33257187328,
+    "nranks": 8,
+    "invalid_actions": 0,
+    "nonfinite": 0,
+    "replica_parameter_max_difference": 0,
+    "NCCL_evidence": [
+      "job-vz9agqd9t0tr-master-0:3982359:3982693 [5] NCCL INFO ncclCommInitRankConfig comm 0x7f634cd9a150 rank 5 nranks 8 cudaDev 5 nvmlDev 5 busId a3000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982692 [4] NCCL INFO ncclCommInitRankConfig comm 0x7f634cd15d60 rank 4 nranks 8 cudaDev 4 nvmlDev 4 busId a1000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982694 [6] NCCL INFO ncclCommInitRankConfig comm 0x7f634ce1e530 rank 6 nranks 8 cudaDev 6 nvmlDev 6 busId a5000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982695 [7] NCCL INFO ncclCommInitRankConfig comm 0x7f634cea2910 rank 7 nranks 8 cudaDev 7 nvmlDev 7 busId a7000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982691 [3] NCCL INFO ncclCommInitRankConfig comm 0x7f634cc918d0 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 67000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982688 [0] NCCL INFO ncclCommInitRankConfig comm 0x7f634cb07940 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 61000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982689 [1] NCCL INFO ncclCommInitRankConfig comm 0x7f634cb88b20 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 63000 commId 0x72a3d24f9e9e173f - Init START",
+      "job-vz9agqd9t0tr-master-0:3982359:3982690 [2] NCCL INFO ncclCommInitRankConfig comm 0x7f634cc0d440 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 65000 commId 0x72a3d24f9e9e173f - Init START"
+    ],
+    "log": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/engineering.log",
+    "adv_keep_fraction": 0.5,
+    "parameters": 8014192,
+    "ema_replica_parameter_max_difference": 0,
+    "time": 1791303956.7920945,
+    "random_action_prob": 0.0,
+    "entropy_coefficient": 0.01,
+    "transition": "model_entropy_01_without_random_actions"
+  },
+  "normal_round_timing_by_history": {
+    "88": {
+      "rounds": 6,
+      "seconds_mean": 22.35125050507486,
+      "rollout_seconds_mean": 8.36756744949768,
+      "train_seconds_mean": 13.855477794383964
+    }
+  },
+  "local_controller": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_entropy01_follow_500_65536_v1",
+  "local_controller_handoff": {
+    "replaced_controller_pid": 3491223,
+    "replaced_idle_pid": 3539068,
+    "new_controller_pid": 3539463,
+    "old_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_explore02_follow_500_65536_v1",
+    "new_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_entropy01_follow_500_65536_v1",
+    "old_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "current_training_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/production/training",
+    "production_handoff": "drain completed results then follow verified eight-rank production transitions",
+    "idle_occupation_preserved": true,
+    "time": 1791304019.09965,
+    "reviewed_registry_failure": "RuntimeError('Unregistered sample-selection handoff')"
+  },
+  "local_status": {
+    "state": "regular_evaluation",
+    "step": 50808,
+    "evaluation_pid": 3539464,
+    "global_deal_offset": 0,
+    "output": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_entropy01_follow_500_65536_v1/step_0050808",
+    "time": 1791304019.055421
+  },
+  "completed_previous_benchmark_preserved": true,
+  "files_sha256": {
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/engineering_READY.json": "94a4b7d3595641d062fccc41fa1fc9be2535ea869d5accf0714b8af233ae2a7c",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/migration_receipt.json": "8ba44babf690128d89e1c7e0dd239243a5fa48a752f50a085bef1d1bf0eeca9d",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/source_pause_receipt.json": "5ef26a9138812d6fec7dea6a3c55446b37634131203c309a126974dc4bb994fb",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/source_health_proof.json": "413e29640a867d6d8cf6407f0393c34888dde327301b38f6037ae8f1ce4bf74f",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/REQUEST.json": "722064a44103ee80ed83af341adf3f92ae56644f183c29d337baf016b8f3a4df",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/SUBMISSION.json": "443b924d0cebd2c3f26e6054e1487037555d1d8cb41ef8e2859e556c83212235",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/worker_recovery_receipt.json": "53ed3015f01d8365a3c3e07eafb4676dd0b0921f4ec453926b4a72faf8efe3c7",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/engineering.log": "f92ba95cafff25cb422af14896f44c9d7d74223566817fefbbe2e2ab2812fe31"
+  },
+  "time": 1791304438.530311,
+  "production_status_at_report": {
+    "state": "running",
+    "iteration": 50811,
+    "global_iteration": 77365,
+    "pid": 3988406,
+    "time": 1791304320.3078818,
+    "parameters": 8014192,
+    "nranks": 8
+  }
+}

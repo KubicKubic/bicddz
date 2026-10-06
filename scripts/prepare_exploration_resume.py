@@ -21,7 +21,8 @@ from ddz.train_v2 import atomic
 def owned_source(active, old, production):
     tokens = shlex.split(active['command'])
     if (not any(module in tokens for module in
-                ('ddz.cluster_distributed_job', 'ddz.scale_architecture_v6'))
+                ('ddz.cluster_distributed_job', 'ddz.scale_architecture_v6',
+                 'ddz.exploration_campaign', 'ddz.entropy_campaign'))
             or '--root' not in tokens
             or Path(tokens[tokens.index('--root') + 1]).resolve() != old.resolve()
             or production.get('state') != 'running'
@@ -70,14 +71,42 @@ def wait_for_pause(queue, run, log, seconds=180):
         time.sleep(2)
 
 
+def checkpoint_ready(latest, minimum):
+    return latest['iteration'] >= minimum
+
+
+def wait_for_checkpoint(queue, run, task_id, minimum, seconds=1800):
+    deadline=time.monotonic()+seconds
+    while not checkpoint_ready(read(run/'latest.json'),minimum):
+        state=read(queue/'status.json')
+        if (state['phase']!='RUNNING' or state['active_id']!=task_id or
+            time.time()-state['updated_at_ns']/1e9>180):
+            raise RuntimeError('Source ownership or worker heartbeat changed while waiting for save')
+        if time.monotonic()>deadline:
+            raise RuntimeError('Checkpoint wait expired; source task has not been interrupted')
+        time.sleep(1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--root', type=Path, required=True)
-    ap.add_argument('--supersede-root', type=Path, required=True)
+    ap.add_argument('--supersede-root', type=Path)
     ap.add_argument('--tests-proof', type=Path, required=True)
+    ap.add_argument('--transition',choices=('random02','entropy01'),default='random02')
+    ap.add_argument('--checkpoint-at',type=int,default=0)
     args = ap.parse_args()
     repo = Path(__file__).resolve().parents[1]
-    root = args.root.resolve(); previous = args.supersede_root.resolve()
+    root = args.root.resolve()
+    entropy=args.transition=='entropy01'
+    previous=args.supersede_root.resolve() if args.supersede_root else None
+    if not entropy and previous is None:raise ValueError('Random02 requires the exact queued crop root')
+    if entropy:
+        from ddz.entropy_campaign import revised_config as revise, TRANSITION as transition
+        module='ddz.entropy_campaign'
+        instruction='改回原来的方案，然后提高更自然的熵奖励。'
+    else:
+        revise=revised_config;transition=TRANSITION;module='ddz.exploration_campaign'
+        instruction='把它增加到 0.02，然后从最新 ckpt 接续训练。'
     if root.exists():
         raise RuntimeError('Resume campaign already retained; inspect before another submission')
     tests = read(args.tests_proof)
@@ -94,21 +123,21 @@ def main():
     active = read(queue / 'running' / (state['active_id'] + '.json'))
     run = Path(read(repo / 'runs/production_current.json')['run']); old = run.parent.parent
     owned_source(active, old, read(run.parent / 'queue_job_status.json'))
-    request = read(previous / 'REQUEST.json')
-    if request['old_root'] != str(old) or request['active_source_queue_id'] != active['id']:
+    request = read(old/'production/READY.json') if entropy else read(previous / 'REQUEST.json')
+    if not entropy and (request['old_root'] != str(old) or request['active_source_queue_id'] != active['id']):
         raise RuntimeError('Queued crop source ownership differs')
     for path, expected in request['files_sha256'].items():
         if sha(Path(path)) != expected:
             raise RuntimeError('Previously frozen crop input changed: ' + path)
     pending = [read(p) for p in (queue / 'pending').glob('*.json')]
-    if len(pending) != 1:
+    if len(pending) != (0 if entropy else 1):
         raise RuntimeError('Expected exactly the reviewed unclaimed trimming task')
     log = old / 'production' / (active['id'] + '.log')
     content = log.read_text()
     pids = set(re.findall(r'^[^:\n]+:(\d+):\d+ .*NCCL.*nranks[ =]+8\b', content, re.MULTILINE))
     if len(pids) != 1:
         raise RuntimeError('Actual trainer PID and eight-rank NCCL identity required')
-    cfg = read(run / 'config.json'); target = revised_config(cfg)
+    cfg = read(run / 'config.json'); target = revise(cfg)
     root.mkdir(); (root / 'production').mkdir()
     shutil.copytree(repo / 'ddz', root / 'code/ddz',
                     ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
@@ -116,9 +145,16 @@ def main():
     os.link(old / 'production/source.msgpack', root / 'production/source.msgpack')
     write(root / 'production/config.json', target)
     write(root / 'USER_RESTART_REQUEST.json', {
-        'user_instruction': '把它增加到 0.02，然后从最新 ckpt 接续训练。',
+        'user_instruction': instruction,
         'retained_authorization': 'global top 50% absolute-advantage selection',
         'source_claim': active, 'old_worker': state, 'time': time.time()})
+    if args.checkpoint_at:
+        write(root/'WAITING_FOR_CHECKPOINT.json',{'minimum_iteration':args.checkpoint_at,
+            'initial_latest':read(run/'latest.json'),'source_queue_id':active['id'],'time':time.time()})
+        print(json.dumps({'state':'waiting_for_complete_checkpoint','minimum_iteration':args.checkpoint_at}),flush=True)
+        wait_for_checkpoint(queue,run,active['id'],args.checkpoint_at)
+    if read(queue/'status.json')['active_id']!=active['id']:
+        raise RuntimeError('Source ownership changed before user-directed pause')
     # Only the explicitly requested restart uses the existing allocation bridge.
     # Every training task below is published through the immutable FIFO helper.
     subprocess.run([str(cluster / 'stop_scheduler_task.sh')], check=True)
@@ -126,7 +162,7 @@ def main():
     interrupted = read(queue / 'interrupted' / (active['id'] + '.json'))
     if interrupted['task_pid'] != active['task_pid']:
         raise RuntimeError('Interrupted source process identity changed')
-    supersede_trim(queue, pending[0], previous, root)
+    if not entropy:supersede_trim(queue, pending[0], previous, root)
     saved = serialization.msgpack_restore((run / 'latest.msgpack').read_bytes())
     at = int(saved['iteration']); status = read(run / 'status.json')
     if (read(run / 'latest.json')['iteration'] != at or status['iteration'] < at
@@ -181,16 +217,18 @@ def main():
     write(root / 'REQUEST.json', {'old_root': str(old), 'at_iteration': at, 'queue': str(queue),
         'source_pause_receipt': str(root / 'source_pause_receipt.json'),
         'source_exit_wait_seconds': 180, 'active_source_queue_id': active['id'],
-        'transition': TRANSITION, 'resource_gate': ready['resource_gate'],
+        'transition': transition, 'resource_gate': ready['resource_gate'],
         'files_sha256': {**ready['files_sha256'], str(root / 'READY.json'): sha(root / 'READY.json')},
         'preserve_global_update_target': cfg['updates'], 'time': time.time()})
     helper = cluster / 'submit_scheduler_task.sh'
     command = 'cd ' + shlex.quote(str(root / 'code')) + ' && ' + shlex.join([
         'env', 'JAX_PLATFORMS=cpu', 'CUDA_VISIBLE_DEVICES=', 'OPENBLAS_NUM_THREADS=1',
-        'OMP_NUM_THREADS=2', sys.executable, '-u', '-m', 'ddz.exploration_campaign', '--root', str(root)])
+        'OMP_NUM_THREADS=2', sys.executable, '-u', '-m', module, '--root', str(root)])
     submitted = subprocess.run([str(helper), command], check=True, text=True, capture_output=True)
     write(root / 'SUBMISSION.json', {'state': 'queued', 'command': command,
-        'submission': submitted.stdout, 'at_iteration': at, 'random_action_prob': .02,
+        'submission': submitted.stdout, 'at_iteration': at,
+        'random_action_prob':target['ppo']['random_action_prob'],
+        'entropy_end':target['ppo']['entropy_end'],
         'adv_keep_fraction': .5, 'time': time.time()})
     fallback_target = min(at + 1000, cfg['continuation_updates'])
     fallback = 'cd ' + shlex.quote(str(old / 'code')) + ' && ' + shlex.join([

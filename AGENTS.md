@@ -226,3 +226,34 @@ actual eight-rank proof, preserves completed benchmarks and every-500-step BEST
 all-role evaluation, and owns idle occupation during unused local A100 time.
 See `reports/EXPLORATION_RESUME_20261006.md` and its JSON proof index for actual
 acceptance status; CPU engineering checks alone are not GPU or strength proof.
+
+## Restore original sampling and stronger entropy (user override, 2026-10-07)
+
+The latest user rejects fixed random-action exploration and requests the original
+scheme with stronger natural model entropy. This supersedes the previous p=.02
+instruction: set `ppo.random_action_prob=0` and `ppo.entropy_end=.01` (previously
+.002). The saturated original entropy schedule gives effective .01 without
+resetting its clock. Use the original p=0 learned-policy sampler, complete-action
+log probabilities and conditional entropy calculation. Retain the independently
+authorized global top-50% raw absolute advantage selection and all other settings.
+
+The frozen continuation is `runs/v6_cluster8_entropy01_top50_now_v1`, prepared
+for the complete relative 50800 checkpoint before pausing its currently owned
+p=.02 segment. Inspect SUBMISSION/REQUEST/source_pause_receipt and the queue for
+the actual pinned step and task id. Never alter frozen source dependencies or
+replay a failed task. The same allocation's queue worker is recovered only for
+this explicit configuration restart; training submissions use the immutable
+queue helper. Keep the source recovery successor until eight actual fresh
+nranks=8/NCCL rounds pass p=0, entropy=.01, exact crop counts, optimizer, replica,
+finite/legal, memory and rollout-EMA continuity gates. Preserve all source state
+and any logged but unsaved rows with an explicit receipt.
+
+The local controller replacement
+`runs/local_a100_v6_entropy01_follow_500_65536_v1` waits for the current BEST
+benchmark to complete, retains all completed results, and continues 500-step
+all-role benchmarks and idle occupation. Do not stop an active evaluation to
+update its controller. A known old-controller registry failure can be reviewed
+only against the accepted entropy transition and a completed, nonfailed
+benchmark; this does not authorize retrying an evaluation failure. Use
+`runs/local_a100_current.json` for actual ownership and curve paths. See
+`reports/ENTROPY_RESUME_20261007.md` and its JSON proof index for accepted status.

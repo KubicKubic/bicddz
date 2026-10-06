@@ -57,8 +57,11 @@ def main():
     args=ap.parse_args();root=args.root.resolve();request=read(root/'REQUEST.json')
     migration=migrate
     exploration=request.get('transition')=='random_action_02_and_advantage_trim'
+    model_entropy=request.get('transition')=='model_entropy_01_without_random_actions'
     if exploration:
         from .exploration_campaign import migrate as migration
+    elif model_entropy:
+        from .entropy_campaign import migrate as migration
     if os.environ.get('Q_CLUSTER_TASK')!='1':raise RuntimeError('Persistent remote queue required')
     for path,expected in request['files_sha256'].items():
         if sha(Path(path))!=expected:raise RuntimeError('Frozen input changed: '+path)
@@ -117,6 +120,9 @@ def main():
     result=summarize(rows,cfg['envs']*cfg['horizon']);verify_trim_rows(rows)
     if exploration and any(row.get('random_action_prob')!=.02 for row in rows):
         raise RuntimeError('Fresh rollout/update exploration configuration differs')
+    if model_entropy:
+        from .entropy_campaign import verify_entropy_rows
+        verify_entropy_rows(rows)
     final=serialization.msgpack_restore((run/'latest.msgpack').read_bytes())
     if final['ema']['updates']!=saved['ema']['updates']+8 or final['ema']['decay']!=saved['ema']['decay']:
         raise RuntimeError('EMA rollout clock continuity failed')
@@ -126,12 +132,15 @@ def main():
     cancelled=cancel_old_followups(queue,old)
     if cancelled!=[expected]:raise RuntimeError('Cancellation set changed')
     path=queue/'interrupted'/(expected+'.json');record=read(path)
-    write(path,{**record,'reason':'USER_REQUESTED_RANDOM_ACTION_02_AND_ADV_TOP50' if exploration
+    write(path,{**record,'reason':'USER_REQUESTED_MODEL_ENTROPY_01_WITHOUT_RANDOM_ACTIONS' if model_entropy else
+                                'USER_REQUESTED_RANDOM_ACTION_02_AND_ADV_TOP50' if exploration
                                 else 'USER_REQUESTED_GLOBAL_ABS_ADV_TOP_50_PERCENT'})
     result.update(NCCL_evidence=nccl[:8],log=str(log),adv_keep_fraction=.5,
                   parameters=read(run/'status.json')['parameters'],
                   ema_replica_parameter_max_difference=0,time=time.time())
     if exploration:result.update(random_action_prob=.02,transition=request['transition'])
+    if model_entropy:result.update(random_action_prob=0.,entropy_coefficient=.01,
+                                  transition=request['transition'])
     write(root/'engineering_READY.json',result)
     write(root.parent/'production_current.json',{'state':'running','run':str(run),'nranks':8,
         'global_iteration':cfg['global_source_iteration']+at+8,
