@@ -1,0 +1,72 @@
+{
+  "state": "queued_not_yet_enabled",
+  "adv_keep_fraction": 0.5,
+  "ranking": "global raw absolute advantage",
+  "crop_applies_to": [
+    "policy",
+    "value",
+    "optional belief",
+    "adaptive vf diagnostic"
+  ],
+  "complete_trajectory_gae_and_normalization": true,
+  "complete_rollout_ev": true,
+  "ema_clock": "completed rollout",
+  "rollout_decisions": 4194304,
+  "parameter_count": 8014192,
+  "preserved_global_target": 200000,
+  "queue_id": "01791268835472576477-69492c095c9842cc82c3140465bc1c6c",
+  "frozen_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_adv_top50_v1",
+  "boundary_relative_step": 51000,
+  "boundary_global_step": 77554,
+  "current_global_step": 76604,
+  "estimated_hours_to_boundary": 12.240012889807659,
+  "cpu_engineering_tests": 25,
+  "core_test_seconds": 132.44,
+  "local_config_test_seconds": 16.08,
+  "production_scale_selection": {
+    "passed": true,
+    "cpu_collective_devices": 8,
+    "rollout_decisions": 4194304,
+    "available_train_samples": 4004988,
+    "retained_train_samples": 2002494,
+    "retained_abs_adv_min": 0.6746853590011597,
+    "dropped_abs_adv_max": 0.6746849417686462,
+    "per_replica_retained": [
+      250328,
+      250244,
+      250765,
+      250401,
+      250308,
+      250469,
+      249966,
+      250013
+    ],
+    "cpu_cold_seconds": 0.6217585150152445,
+    "cpu_warm_seconds": 0.2551602032035589,
+    "actual_gpu_timing": false,
+    "time": 1791268705.9734216
+  },
+  "actual_eight_gpu_proof_pending": true,
+  "gpu_speed_improvement_proven": false,
+  "playing_strength_improvement_proven": false,
+  "required_acceptance": [
+    "eight completed rounds",
+    "nranks=8 and NCCL",
+    "retained=floor(available/2)",
+    "all selected rows updated",
+    "finite legal synchronized raw and EMA",
+    "allocator headroom"
+  ],
+  "failure_behavior": "retain old queued continuation, retain failed item, no silent retry",
+  "working_tree_local_config_support": "two extra tests; distributed frozen runner calls make_update directly",
+  "files_sha256": {
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/advantage_sampling.py": "87ac73ebda9e9b3023d777c08a99ab733fb77bd898667365816083de6248daa2",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/ppo_efficiency.py": "29d06f10c30a60082721854eebe7ab6870a15ae0a602c469d59860daf3188c17",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/trim_rollout_campaign.py": "fa92a2246cbadb89a64e0d09571c7a71e9efdf3b776a826e91bc6b0ae0491a72",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/scripts/prepare_advantage_trim.py": "f0764d2b4eff25fff21d5654cb6125b6fa0beb20c13f79d927da22872bc439cc",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_advantage_sampling.py": "758494f0ea3e24cf4c65b1718ceed89fc5e748b93ab0011e9ca98ba13eb403de",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_trim_rollout_campaign.py": "fd506ea122e0f411e7abcac188caf0ed2c8f98bf3a77b2ac2e7ca8756f3e86eb",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_distributed_v5.py": "f67087768a8a04c13015c2603579e3c9c036c2a562f139f44824e32dba181c40"
+  },
+  "time": 1791269044.8460422
+}

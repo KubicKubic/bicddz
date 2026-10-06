@@ -10,6 +10,7 @@ from .ppo_v5 import gae, policy_terms
 from .policy_v2 import _pending, _advance
 from .actions import N_BODY, WINGS
 from .env_v2 import legal_wings
+from .advantage_sampling import validate_keep_fraction,keep_largest_advantages,shuffled_selected_indices
 
 
 class Transition(NamedTuple):
@@ -111,7 +112,7 @@ def forced_one(state,action):
     return jax.lax.cond(action<0,lambda _:forced,move,None)
 
 
-def prepare_targets(tr, last, cfg, axis_name=None):
+def prepare_targets(tr, last, cfg, axis_name=None, return_raw=False):
     if cfg.get('gae_clock','public') == 'own':
         actor, own_target, valid = own_seat_gae(tr.value,tr.reward,tr.done,tr.turn,cfg['gamma'],cfg['lambda'])
         value_mask = jax.nn.one_hot(tr.turn,3,dtype=j.bool_) & valid[...,None]
@@ -127,10 +128,12 @@ def prepare_targets(tr, last, cfg, axis_name=None):
         states=jax.tree_util.tree_map(lambda x:x.reshape((-1,)+x.shape[2:]),tr.state)
         forced=jax.vmap(forced_one)(states,tr.action.reshape(-1)).reshape(shape)
         actor_mask = actor_mask & ~forced
+    raw_actor = actor
     mean = weighted_mean(actor,actor_mask,axis_name)
     std = j.sqrt(weighted_mean(j.square(actor-mean),actor_mask,axis_name))
     actor = j.where(actor_mask,(actor-mean)/(std+1e-8),0)
-    return actor,target,value_mask,actor_mask,valid
+    result = (actor,target,value_mask,actor_mask,valid)
+    return result + (raw_actor,) if return_raw else result
 
 
 def make_rollout(model,horizon,memory_limit=88,pool_probability=0.,random_action_prob=0.,pool_bucket=256):
@@ -191,8 +194,10 @@ def make_rollout(model,horizon,memory_limit=88,pool_probability=0.,random_action
 
 def make_update(model,cfg,memory_length=88,axis_name=None):
     prob=policy.validate_random_action_prob(cfg.get('random_action_prob',0.))
+    keep_fraction=validate_keep_fraction(cfg.get('adv_keep_fraction',1.))
     metric_names=('loss','policy_loss','value_loss','entropy','kl','clip_fraction',
-                  'belief_loss','belief_accuracy','grad_norm','nonfinite','applied','evaluated')
+                  'belief_loss','belief_accuracy','grad_norm','nonfinite','applied','evaluated',
+                  'applied_samples')
     zero={k:j.float32(0) for k in metric_names}
     def loss(params,tr,adv,target,value_mask,actor_mask,entropy_coef,vf_coef):
         obs=jax.vmap(env.observe)(tr.state)
@@ -209,8 +214,13 @@ def make_update(model,cfg,memory_length=88,axis_name=None):
         bl=j.float32(0);accuracy=j.float32(0)
         if model.belief_head:
             labels=belief_targets(tr.state)
-            bl=j.mean(optax.softmax_cross_entropy_with_integer_labels(belief,labels))
-            accuracy=j.mean(j.argmax(belief,axis=-1)==labels)
+            per_sample=optax.softmax_cross_entropy_with_integer_labels(belief,labels)
+            correct=j.argmax(belief,axis=-1)==labels
+            if keep_fraction < 1:
+                bl=loss_mean(j.mean(per_sample,axis=(1,2)),actor_mask,axis_name)
+                accuracy=loss_mean(j.mean(correct,axis=(1,2)),actor_mask,axis_name)
+            else:
+                bl=j.mean(per_sample);accuracy=j.mean(correct)
         total=pl+vf_coef*vl-entropy_coef*entropy+cfg.get('belief_coef',0.)*bl
         return total,{'loss':total,'policy_loss':pl,'value_loss':vl,'entropy':entropy,
             'kl':loss_mean((ratio-1)-delta,actor_mask,axis_name),
@@ -219,12 +229,24 @@ def make_update(model,cfg,memory_length=88,axis_name=None):
     grad=jax.value_and_grad(loss,has_aux=True)
     @jax.jit
     def update(ts,tr,last,key,entropy_coef,vf_coef,learning_rate):
-        actor,target,value_mask,actor_mask,valid=prepare_targets(tr,last,cfg,axis_name)
+        actor,target,value_mask,actor_mask,valid,raw_actor=prepare_targets(tr,last,cfg,axis_name,return_raw=True)
         n=actor.size
+        original_value_mask=value_mask
+        original_actor_mask=actor_mask
+        selected=keep_largest_advantages(raw_actor,actor_mask,keep_fraction,axis_name)
         flat=jax.tree_util.tree_map(lambda x:x.reshape((n,)+x.shape[2:]),tr)
         actor=actor.reshape(n);target=target.reshape(n,3)
         value_mask=value_mask.reshape(n,3);actor_mask=actor_mask.reshape(n)
-        indices=jax.vmap(lambda k:jax.random.permutation(k,n))(jax.random.split(key,cfg['epochs']))
+        if keep_fraction < 1:
+            actor_mask &= selected.reshape(n)
+            value_mask &= selected.reshape(n,1)
+            indices=shuffled_selected_indices(key,selected,cfg['epochs'])
+            selected_count=j.sum(selected)
+            largest_count=selected_count if axis_name is None else jax.lax.pmax(selected_count,axis_name)
+            planned=cfg['epochs']*((largest_count+cfg['minibatch']-1)//cfg['minibatch'])
+        else:
+            indices=jax.vmap(lambda k:jax.random.permutation(k,n))(jax.random.split(key,cfg['epochs']))
+            planned=cfg['epochs']*n//cfg['minibatch']
         indices=indices.reshape(-1,cfg['minibatch'])
         def step(carry,ix):
             ts,stop=carry
@@ -243,19 +265,34 @@ def make_update(model,cfg,memory_length=88,axis_name=None):
                     updates=jax.tree_util.tree_map(lambda x:x*learning_rate,updates)
                     return ts.replace(step=ts.step+1,params=optax.apply_updates(ts.params,updates),opt_state=opt_state)
                 updated=jax.lax.cond(apply,commit,lambda x:x,ts)
+                samples=j.sum(actor_mask[ix])
+                if axis_name is not None:samples=jax.lax.psum(samples,axis_name)
                 return (updated,exceeded|~finite),dict(m,grad_norm=norm,
-                    nonfinite=(~finite).astype(j.float32),applied=apply.astype(j.float32),evaluated=j.float32(1))
-            return jax.lax.cond(stop,lambda _:((ts,stop),zero),evaluate,None)
+                    nonfinite=(~finite).astype(j.float32),applied=apply.astype(j.float32),evaluated=j.float32(1),
+                    applied_samples=j.where(apply,samples,0).astype(j.float32))
+            active=j.array(True)
+            if keep_fraction < 1:
+                count=j.sum(actor_mask[ix])
+                if axis_name is not None:count=jax.lax.psum(count,axis_name)
+                active=count>0
+            return jax.lax.cond(stop|~active,lambda _:((ts,stop),zero),evaluate,None)
         (ts,_),m=jax.lax.scan(step,(ts,j.array(False)),indices)
-        evaluated=j.sum(m['evaluated']);planned=len(indices)
-        result={k:j.sum(v)/j.maximum(evaluated,1) for k,v in m.items() if k not in ('applied','evaluated','nonfinite')}
-        result.update(applied=j.sum(m['applied'])/planned,evaluated_fraction=evaluated/planned,
+        evaluated=j.sum(m['evaluated'])
+        result={k:j.sum(v)/j.maximum(evaluated,1) for k,v in m.items() if k not in ('applied','evaluated','nonfinite','applied_samples')}
+        def total(x):return x if axis_name is None else jax.lax.psum(x,axis_name)
+        result.update(applied=j.sum(m['applied'])/j.maximum(planned,1),evaluated_fraction=evaluated/j.maximum(planned,1),
             kl_max=j.max(m['kl']),kl_early_stop=j.any(m['kl']>cfg['target_kl']).astype(j.float32),
             nonfinite=j.sum(m['nonfinite']),evaluated_minibatches=evaluated,
             applied_minibatches=j.sum(m['applied']),
-            actor_eligible_fraction=j.mean(actor_mask),value_eligible_fraction=j.mean(value_mask),
+            planned_minibatches=j.asarray(planned,j.float32),
+            applied_train_samples=j.sum(m['applied_samples']),
+            retained_train_samples=total(j.sum(selected)).astype(j.float32),
+            available_train_samples=total(j.sum(original_actor_mask)).astype(j.float32),
+            adv_keep_fraction=j.float32(keep_fraction),
+            retained_fraction=total(j.sum(selected))/j.maximum(total(j.sum(original_actor_mask)),1),
+            actor_eligible_fraction=j.mean(original_actor_mask),value_eligible_fraction=j.mean(original_value_mask),
             gae_resolved_fraction=j.mean(valid))
-        result['value_explained_variance']=weighted_ev(tr.value,target.reshape(tr.value.shape),value_mask.reshape(tr.value.shape),axis_name)
+        result['value_explained_variance']=weighted_ev(tr.value,target.reshape(tr.value.shape),original_value_mask,axis_name)
         acting_v=j.take_along_axis(tr.value,tr.turn[...,None],axis=-1)[...,0]
         acting_t=j.take_along_axis(target.reshape(tr.value.shape),tr.turn[...,None],axis=-1)[...,0]
         result['acting_value_explained_variance']=weighted_ev(acting_v,acting_t,valid,axis_name)
@@ -266,10 +303,16 @@ def make_update(model,cfg,memory_length=88,axis_name=None):
 
 def make_diagnostic(model,cfg,memory_length=88,axis_name=None):
     """Adaptive vf uses the same valid actor/value masks as the update."""
+    keep_fraction=validate_keep_fraction(cfg.get('adv_keep_fraction',1.))
     @jax.jit
     def diagnose(params,tr,last,key):
-        actor,target,vm,am,_=prepare_targets(tr,last,cfg,axis_name);n=actor.size
-        ix=jax.random.permutation(key,n)[:cfg.get('vf_diagnostic_batch',256)]
+        actor,target,vm,am,_,raw=prepare_targets(tr,last,cfg,axis_name,return_raw=True);n=actor.size
+        if keep_fraction < 1:
+            selected=keep_largest_advantages(raw,am,keep_fraction,axis_name)
+            vm &= selected[...,None];am &= selected
+            ix=shuffled_selected_indices(key,selected,1)[0,:cfg.get('vf_diagnostic_batch',256)]
+        else:
+            ix=jax.random.permutation(key,n)[:cfg.get('vf_diagnostic_batch',256)]
         flat=jax.tree_util.tree_map(lambda x:x.reshape((n,)+x.shape[2:])[ix],tr)
         actor=actor.reshape(n)[ix];target=target.reshape(n,3)[ix]
         vm=vm.reshape(n,3)[ix];am=am.reshape(n)[ix]

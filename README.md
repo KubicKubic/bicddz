@@ -71,6 +71,25 @@ QOJ 客户端提前部署支持 V6 的代码，模型架构切换时后台预热
 1024 次优化器更新的 warmup，保存该设置并检查恢复一致性，原参数保留成熟
 Adam 年龄。迁移还等待实际旧训练子进程退出后再检查显存和启动新任务。
 
+### 按原始 advantage 筛选样本
+
+`ppo.adv_keep_fraction=0.5` 保留八卡全局有效 learner 决策中，归一化前
+`|adv|` 最大的一半；省略此设置或设为 `1.0` 使用完整样本。先在完整轨迹上
+计算同座位 GAE、return 和 advantage 归一化，再筛选，正负 advantage 均保留。
+policy、value、可选 belief loss 和自适应 vf 诊断使用同一筛选规则。
+完整 rollout 的 value explained variance 继续记录。EMA 每轮 rollout 更新一次。
+
+筛选通过四次 256 桶直方图归约确定精确全局阈值，处理并列值和无效样本；
+选中样本打乱并前置，尾部空 minibatch 跳过实际反向计算。新增
+`available_train_samples`、`retained_train_samples`、`applied_train_samples`、
+`retained_fraction` 和 `planned_minibatches` 指标。
+
+本次冻结任务 `runs/v6_cluster8_adv_top50_v1` 已排队，在当前段相对 51000 /
+全局 77554 的完整断点后执行八卡验证，通过后续训至原有 200000 全局目标。
+保留原模型、Adam、环境、RNG、vf 和 EMA；旧续训任务在新方案验收通过后取消。
+CPU 工程检查通过，真实八卡耗时和 DouZero 能力变化尚待运行验证。详见
+[样本筛选记录](reports/ADVANTAGE_TRIM_20261006.md)。
+
 ## V5：更深的注意力与动作交互
 
 入口为 `ddz.train_v5`、`configs/a100_v5.json` 和 `ddz.api_v5`，运行目录为

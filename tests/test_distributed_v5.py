@@ -20,7 +20,8 @@ def test_global_masked_gradient_with_empty_replica():
 
 
 @pytest.mark.parametrize('clock',['public','own'])
-def test_eight_rank_ppo_and_vf_diagnostic_match_global_batch(clock):
+@pytest.mark.parametrize('keep_fraction',[1.,.5])
+def test_eight_rank_ppo_and_vf_diagnostic_match_global_batch(clock,keep_fraction):
     model,params,_,result=toy_rollout();_,key,tr,last,_=result
     local_n=tr.action.size
     shards=[]
@@ -35,7 +36,7 @@ def test_eight_rank_ppo_and_vf_diagnostic_match_global_batch(clock):
     ts=TrainState.create(apply_fn=model.apply,params=params,tx=optax.scale(-1.))
     replicated=jax.device_put_replicated(ts,jax.local_devices())
     cfg={**small_config()['ppo'],'epochs':1,'minibatch':local_n,'gae_clock':clock,
-         'vf_diagnostic_batch':local_n}
+         'vf_diagnostic_batch':local_n,'adv_keep_fraction':keep_fraction}
     update=jax.pmap(make_update(model,cfg,8,'replicas'),axis_name='replicas',
                     in_axes=(0,0,0,0,None,None,None))
     updated,m=update(replicated,sharded,lasts,keys,j.float32(.002),j.float32(.03),j.float32(.001))

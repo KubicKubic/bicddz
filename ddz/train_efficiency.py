@@ -78,7 +78,7 @@ def pool_parameters(template,paths):
 
 
 def validate_config(cfg,source_cfg):
-    allowed={'epochs','gae_clock','belief_coef','optional_actor_only','random_action_prob'}
+    allowed={'epochs','gae_clock','belief_coef','optional_actor_only','random_action_prob','adv_keep_fraction'}
     for key in set(cfg['ppo'])|set(source_cfg['ppo']):
         if key not in allowed and cfg['ppo'].get(key)!=source_cfg['ppo'].get(key):
             raise ValueError(f'unmatched PPO option {key}')
@@ -95,6 +95,8 @@ def validate_config(cfg,source_cfg):
         raise ValueError('belief loss requires belief head')
     from .policy_v5 import validate_random_action_prob
     validate_random_action_prob(p.get('random_action_prob',0.))
+    from .advantage_sampling import validate_keep_fraction
+    validate_keep_fraction(p.get('adv_keep_fraction',1.))
     if not 0<=cfg.get('pool_probability',0)<=1:raise ValueError('invalid pool probability')
 
 

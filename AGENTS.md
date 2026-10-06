@@ -156,3 +156,17 @@ query masks, coordinate ages, finite metrics and EMA replica agreement.
 See `reports/V6_ARCHITECTURE_AUDIT_20261006.md`; preserved artifacts are in
 `runs/v6_audit_20261006_v1`. The local controller PID changed during owned GPU
 engineering; use its current pointer, never historical process ids.
+
+## Absolute-advantage sample trimming (user instruction, 2026-10-06)
+
+The user requests retaining only the largest 50% of absolute advantages.
+`runs/v6_cluster8_adv_top50_v1` is frozen and queued after the currently owned
+segment at relative 51000 / global 77554. `ppo.adv_keep_fraction=0.5` ranks raw
+advantages globally across all eight ranks over valid learner decisions.
+Compute GAE/returns and normalization on complete trajectories first; selected
+decisions train policy and value, and adaptive vf uses the same selection.
+EV remains a complete-rollout diagnostic; EMA remains on the rollout clock.
+Do not change live frozen code or duplicate the handoff. Its eight-round
+nranks=8/NCCL, exact-count, optimizer, replica and memory gates must pass before
+promotion; preserve the old successor until then. CPU engineering proof alone
+does not establish GPU speed or playing-strength gains.
