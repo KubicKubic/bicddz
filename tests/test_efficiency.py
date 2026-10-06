@@ -157,12 +157,12 @@ class ToyModel:
         return (logits,ctx,v,None) if return_aux else (logits,ctx,v)
 
 
-def toy_rollout():
+def toy_rollout(random_action_prob=0.):
     model=ToyModel();params={'w':j.float32(.1)}
     states=env.batch_reset(jax.random.split(jax.random.PRNGKey(9),4))
     arena=ArenaState(states,j.zeros(4,j.int32),j.zeros(4,j.int32),j.zeros(4,j.bool_),j.zeros(4,j.bool_))
     pool=jax.tree_util.tree_map(lambda x:x[None],params)
-    result=make_rollout(model,4,8)(params,arena,jax.random.PRNGKey(10),pool)
+    result=make_rollout(model,4,8,random_action_prob=random_action_prob)(params,arena,jax.random.PRNGKey(10),pool)
     return model,params,pool,result
 
 

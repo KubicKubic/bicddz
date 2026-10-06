@@ -1,0 +1,100 @@
+{
+  "state": "accepted_and_long_term_training_running",
+  "random_action_prob": 0.02,
+  "adv_keep_fraction": 0.5,
+  "model_family": "V6",
+  "parameters": 8014192,
+  "source_relative_step": 50700,
+  "source_global_step": 77254,
+  "accepted_relative_step": 50708,
+  "accepted_global_step": 77262,
+  "global_update_target": 200000,
+  "unsaved_source_rounds_retained_but_not_resumed": 66,
+  "retained_state": {
+    "source_checkpoint_sha256": "7727bb378b50a42f33671d61dfe649f3b7958f6261c659a38c9892c6eeaec375",
+    "migrated_checkpoint_sha256": "56e311c43965db7351c2a2c4535cdfb60655d853e5c0935437e5b92a77541a68",
+    "iteration": 50700,
+    "weights_adam_env_rng_vf_ema_retained": true,
+    "ema_updates": 11700,
+    "optimizer_step": 5362725,
+    "time": 1791299931.2288382
+  },
+  "engineering_proof": {
+    "passed": true,
+    "updates": 8,
+    "timed_updates": 4,
+    "decisions_per_second": 163103.07595855813,
+    "eligible_decisions_per_second": 155959.93955872502,
+    "rollout_seconds_mean": 8.493407483678311,
+    "train_seconds_mean": 17.05379482684657,
+    "actor_eligible_fraction_mean": 0.9562047719955444,
+    "value_explained_variance_mean": 0.6668016612529755,
+    "kl_max": 0.0036114465910941362,
+    "clip_fraction_mean": 0.014221182558685541,
+    "gpu_peak_memory_bytes": 33195328768,
+    "nranks": 8,
+    "invalid_actions": 0,
+    "nonfinite": 0,
+    "replica_parameter_max_difference": 0,
+    "NCCL_evidence": [
+      "job-vz9agqd9t0tr-master-0:3950485:3950833 [6] NCCL INFO ncclCommInitRankConfig comm 0x7feb80e2bcc0 rank 6 nranks 8 cudaDev 6 nvmlDev 6 busId a5000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950831 [4] NCCL INFO ncclCommInitRankConfig comm 0x7feb80d234f0 rank 4 nranks 8 cudaDev 4 nvmlDev 4 busId a1000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950828 [1] NCCL INFO ncclCommInitRankConfig comm 0x7feb80b96330 rank 1 nranks 8 cudaDev 1 nvmlDev 1 busId 63000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950832 [5] NCCL INFO ncclCommInitRankConfig comm 0x7feb80da78e0 rank 5 nranks 8 cudaDev 5 nvmlDev 5 busId a3000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950829 [2] NCCL INFO ncclCommInitRankConfig comm 0x7feb80c1abd0 rank 2 nranks 8 cudaDev 2 nvmlDev 2 busId 65000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950830 [3] NCCL INFO ncclCommInitRankConfig comm 0x7feb80c9f060 rank 3 nranks 8 cudaDev 3 nvmlDev 3 busId 67000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950834 [7] NCCL INFO ncclCommInitRankConfig comm 0x7feb80eb00a0 rank 7 nranks 8 cudaDev 7 nvmlDev 7 busId a7000 commId 0x9c82b08655048c28 - Init START",
+      "job-vz9agqd9t0tr-master-0:3950485:3950827 [0] NCCL INFO ncclCommInitRankConfig comm 0x7feb80b15150 rank 0 nranks 8 cudaDev 0 nvmlDev 0 busId 61000 commId 0x9c82b08655048c28 - Init START"
+    ],
+    "log": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/engineering.log",
+    "adv_keep_fraction": 0.5,
+    "parameters": 8014192,
+    "ema_replica_parameter_max_difference": 0,
+    "time": 1791300455.2711494,
+    "random_action_prob": 0.02,
+    "transition": "random_action_02_and_advantage_trim"
+  },
+  "normal_round_timing_by_history": {
+    "88": {
+      "rounds": 5,
+      "seconds_mean": 22.578927034512162,
+      "rollout_seconds_mean": 8.48961379751563,
+      "train_seconds_mean": 13.941051599755884
+    },
+    "192": {
+      "rounds": 1,
+      "seconds_mean": 34.969492537900805,
+      "rollout_seconds_mean": 8.458894910290837,
+      "train_seconds_mean": 26.472048116847873
+    }
+  },
+  "local_controller": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_explore02_follow_500_65536_v1",
+  "local_status": {
+    "state": "regular_evaluation",
+    "step": 50708,
+    "evaluation_pid": 3497962,
+    "global_deal_offset": 0,
+    "output": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_explore02_follow_500_65536_v1/step_0050708",
+    "time": 1791300466.2338302
+  },
+  "local_handoff": {
+    "old_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "new_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/production/training",
+    "initial_step": 50708,
+    "proof": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/engineering_READY.json",
+    "transition": "random_action_02_and_advantage_trim",
+    "time": 1791300465.4651725
+  },
+  "cpu_tests": 40,
+  "files_sha256": {
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/engineering_READY.json": "551c5322215b8a0b2c493be5b606e67fd2d3f932002402b2eb0ef82cf6527e34",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/migration_receipt.json": "50ff3cb62ce8da47ca63f0cc6bc64afbd1a67831c47fce7c9a64d880267a732b",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/source_pause_receipt.json": "f4f92dd037515eb177a7e4c8cf06a9ae302e6c9d68e6e9c0ee23c9db54389d7e",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/source_health_proof.json": "2b59ab8ae5e339bdd5ae90dd82f96a20010ffda950172f564ccd18d691aca0b6",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/REQUEST.json": "65f5725dc3723aa1b473e4c9ddfe6136d2b0217d016087b4cea0ce1b143d04eb",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/SUBMISSION.json": "716a4a55f7f732377d5dbe641cdc89cddd427a6e70883fe67da3f30144db92f1",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/worker_recovery_receipt.json": "98f7806c5db174237cb920ea0cc557b33b120b704522c5db06d7a544cc17ad31",
+    "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_random02_top50_now_v1/engineering.log": "b42d70f0469ad2cc4364f546c8d03cd12849678f70b10648aaf1df6c436ce8b3"
+  },
+  "time": 1791300555.8255603
+}

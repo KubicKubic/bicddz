@@ -13,7 +13,7 @@ import time
 import numpy as np
 from flax import serialization
 from .scale_rollout_campaign import read,write,sha,summarize
-from .scale_architecture_v6 import expected_followup
+from .scale_architecture_v6 import expected_followup, verify_source
 from .switch_distributed_gae import equal,cancel_old_followups
 from .train_v2 import atomic
 
@@ -55,15 +55,15 @@ def verify_trim_rows(rows):
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('--root',type=Path,required=True)
     args=ap.parse_args();root=args.root.resolve();request=read(root/'REQUEST.json')
+    migration=migrate
+    exploration=request.get('transition')=='random_action_02_and_advantage_trim'
+    if exploration:
+        from .exploration_campaign import migrate as migration
     if os.environ.get('Q_CLUSTER_TASK')!='1':raise RuntimeError('Persistent remote queue required')
     for path,expected in request['files_sha256'].items():
         if sha(Path(path))!=expected:raise RuntimeError('Frozen input changed: '+path)
     old=Path(request['old_root']);old_run=old/'production/training';at=request['at_iteration']
-    status=read(old_run/'status.json');previous=read(old_run.parent/'queue_job_status.json')
-    if (status['state']!='completed' or status['iteration']!=at or status['nranks']!=8 or
-        previous.get('state')!='complete' or not previous.get('passed') or previous.get('nranks')!=8 or
-        previous.get('queue_id')!=request['active_source_queue_id'] or not previous.get('NCCL_evidence')):
-        raise RuntimeError('Source segment must finish with its exact eight-rank NCCL proof')
+    verify_source(request,old_run)
     queue=Path(request['queue']);phase=root/'production';run=phase/'training'
     if run.exists():raise RuntimeError('Migration already began; explicit review required')
     # Source has completed and released its allocator. Check all eight devices.
@@ -77,7 +77,7 @@ def main():
     write(root/'remote_resource_check.json',{'devices_mib':devices,'required_bytes':needed,'time':time.time()})
     raw=(old_run/'latest.msgpack').read_bytes();source_hash=sha(old_run/'latest.msgpack')
     saved=serialization.msgpack_restore(raw);cfg=read(phase/'config.json')
-    migrated=migrate(saved,cfg,at)
+    migrated=migration(saved,cfg,at)
     if saved['runtime']['source_sha256']!=sha(phase/'source.msgpack'):
         raise RuntimeError('Original source checkpoint identity differs')
     target=min(at+1000,cfg['continuation_updates'])
@@ -115,6 +115,8 @@ def main():
     if [r['iteration'] for r in rows]!=list(range(at+1,at+9)):
         raise RuntimeError('Exactly eight fresh rollout updates required')
     result=summarize(rows,cfg['envs']*cfg['horizon']);verify_trim_rows(rows)
+    if exploration and any(row.get('random_action_prob')!=.02 for row in rows):
+        raise RuntimeError('Fresh rollout/update exploration configuration differs')
     final=serialization.msgpack_restore((run/'latest.msgpack').read_bytes())
     if final['ema']['updates']!=saved['ema']['updates']+8 or final['ema']['decay']!=saved['ema']['decay']:
         raise RuntimeError('EMA rollout clock continuity failed')
@@ -124,9 +126,12 @@ def main():
     cancelled=cancel_old_followups(queue,old)
     if cancelled!=[expected]:raise RuntimeError('Cancellation set changed')
     path=queue/'interrupted'/(expected+'.json');record=read(path)
-    write(path,{**record,'reason':'USER_REQUESTED_GLOBAL_ABS_ADV_TOP_50_PERCENT'})
+    write(path,{**record,'reason':'USER_REQUESTED_RANDOM_ACTION_02_AND_ADV_TOP50' if exploration
+                                else 'USER_REQUESTED_GLOBAL_ABS_ADV_TOP_50_PERCENT'})
     result.update(NCCL_evidence=nccl[:8],log=str(log),adv_keep_fraction=.5,
+                  parameters=read(run/'status.json')['parameters'],
                   ema_replica_parameter_max_difference=0,time=time.time())
+    if exploration:result.update(random_action_prob=.02,transition=request['transition'])
     write(root/'engineering_READY.json',result)
     write(root.parent/'production_current.json',{'state':'running','run':str(run),'nranks':8,
         'global_iteration':cfg['global_source_iteration']+at+8,

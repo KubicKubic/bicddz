@@ -26,11 +26,17 @@ def follow_architecture(cfg,regular,root):
     trimming=original.get('model_family')=='V6'
     parameters=proof.get('parameters')
     if trimming:
-        from .trim_rollout_campaign import revised_config
-        try:expected=revised_config(original)
-        except ValueError as error:raise RuntimeError('Unregistered sample-selection handoff') from error
         campaign=run.parent.parent
         registration=read(campaign/'REQUEST.json');migration=read(campaign/'migration_receipt.json')
+        exploration=registration.get('transition')=='random_action_02_and_advantage_trim'
+        if exploration:
+            from .exploration_campaign import revised_config
+            if proof.get('random_action_prob')!=.02:
+                raise RuntimeError('Exploration handoff lacks its accepted probability proof')
+        else:
+            from .trim_rollout_campaign import revised_config
+        try:expected=revised_config(original)
+        except ValueError as error:raise RuntimeError('Unregistered sample-selection handoff') from error
         if (candidate!=expected or
             Path(registration['old_root']).resolve()!=Path(regular['run_dir']).parent.parent.resolve() or
             not migration.get('weights_adam_env_rng_vf_ema_retained') or
@@ -58,7 +64,8 @@ def follow_architecture(cfg,regular,root):
         first=read(run/'latest.json')['iteration']
         write(receipt,{'old_run':regular['run_dir'],'new_run':str(run),
             'initial_step':first,'proof':current['proof'],
-            'transition':'advantage_trim' if trimming else 'V5_to_V6','time':time.time()})
+            'transition':registration['transition'] if trimming and exploration else
+                         'advantage_trim' if trimming else 'V5_to_V6','time':time.time()})
     result={**regular,'run_dir':str(run),'initial_steps':[first]}
     result['protocol']={**regular['protocol'],'architecture_transition':{
         'family':'V6','parameters':8_014_192,'first_global_step':candidate['global_source_iteration']+first}}

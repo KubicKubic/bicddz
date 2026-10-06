@@ -86,7 +86,7 @@ def test_complete_mixture_normalizes_and_matches_independent_random_distribution
     expected_random=np.array([random_probability(state,a) for a in actions])
     np.testing.assert_allclose(j.exp(random_lp),expected_random,rtol=2e-6,atol=1e-8)
     np.testing.assert_allclose(expected_random.sum(),1,rtol=2e-6)
-    for p in (.01,.3,.9):
+    for p in (.01,.02,.3,.9):
         lp,surprisal=evaluate(p)
         expected=(1-p)*np.exp(model_lp)+p*expected_random
         np.testing.assert_allclose(j.exp(lp),expected,rtol=3e-6,atol=1e-8)
@@ -162,7 +162,7 @@ def test_mixture_gradient_and_importance_weighted_entropy_match_exact_expectatio
     np.testing.assert_array_equal(terms['entropy'],j.arange(len(actions),dtype=j.float32).mean())
 
 
-@pytest.mark.parametrize('p',[.03,1.])
+@pytest.mark.parametrize('p',[.02,.03,1.])
 def test_exploration_finishes_real_games_without_illegal_actions(p):
     ctx=context();states=env.batch_reset(jax.random.split(jax.random.PRNGKey(604),24))
     @jax.jit

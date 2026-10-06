@@ -187,3 +187,42 @@ trimming proof's older schema obtains model parameter count from actual trainer
 status; require 8,014,192 and nranks=8. Preserve the completed benchmark cache,
 the initial handoff point and the single idle workload. Do not restart for each
 checkpoint. See `reports/REPO_CLEANUP_20261006.md` for the verified controller update.
+
+## Fixed exploration continuation (user instruction, 2026-10-06)
+
+The latest user requested `random_action_prob=0.02` and resumption from the
+latest complete checkpoint. The frozen continuation is
+`runs/v6_cluster8_random02_top50_now_v1`, queue item
+`01791299912048312550-410742529dc0409c9dbd74c212a7f4c8`. It retains the previously
+authorized global top-50%-absolute-raw-advantage selection in the same run.
+The old pending `v6_cluster8_adv_top50_v1` task was superseded with an interrupted
+receipt before execution; never run or replay it. The existing allocation was
+paused under this explicit checkpoint-restart instruction, and training tasks
+were submitted through the immutable queue helper before restoring its worker.
+
+The resume source is relative 50700 / global 77254. Preserve the 66 logged but
+unsaved source rounds in `source_metrics_before_pause.jsonl`; those updates are
+excluded from resumed metrics. The checksum-bound pause proof and remote trainer
+process-absence gate are required. Retain all weights, Adam moments/coordinate
+ages, environment states, eight RNG streams, adaptive vf runtime and EMA. EMA
+remains decay 0.999 on the completed-rollout clock. Training remains V6 with
+8,014,192 parameters, 65,536 environments, horizon 64, LR 1e-5, gamma 1,
+lambda .95, one PPO epoch, save every 100, and global target 200000.
+
+Use one Bernoulli per complete action and the exact complete-action mixture
+probability in PPO. The random branch is uniform at legal tree nodes, not
+necessarily across complete-action leaves. Positive-p entropy is sampled
+mixture surprisal, so its metric differs from the previous conditional entropy.
+Do not apply training exploration automatically to greedy DouZero/QOJ play.
+Require eight fresh real GPU rounds, nranks=8/NCCL, exact crop counts, optimizer
+acceptance, finite/legal decisions, replica agreement, memory and EMA continuity
+before production promotion. Retain the old recovery successor until acceptance;
+failures require explicit review and a new queue item.
+
+The current single local controller release is
+`runs/local_a100_v6_explore02_follow_500_65536_v1`; use the live pointer for its PID.
+It accepts the registered exploration/crop transition with retained-state and
+actual eight-rank proof, preserves completed benchmarks and every-500-step BEST
+all-role evaluation, and owns idle occupation during unused local A100 time.
+See `reports/EXPLORATION_RESUME_20261006.md` and its JSON proof index for actual
+acceptance status; CPU engineering checks alone are not GPU or strength proof.

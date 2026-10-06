@@ -230,7 +230,8 @@ def main():
                 vf_coef=vf,learning_rate=used_lr,entropy_coef=entropy,history_max=int(host_stats[:,:,3].max()),
                 optimizer_step=int(np.asarray(ts.step)[0]),train_minibatch=8*local_mb,
                 train_memory_length=memory if short else env.HISTORY)
-            row.update(ema_decay=ema_decay,ema_updates=ema_updates)
+            row.update(ema_decay=ema_decay,ema_updates=ema_updates,
+                       random_action_prob=p.get('random_action_prob',0.))
             if row['invalid_actions'] or row['nonfinite'] or not all(np.isfinite(v) for v in row.values()):
                 raise RuntimeError('Distributed training invariant failed')
             stream.write(json.dumps(row)+'\n');print(json.dumps(row),flush=True)
