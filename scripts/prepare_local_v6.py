@@ -22,7 +22,10 @@ def main():
     ap.add_argument('--cpu-proof',type=Path,required=True);args=ap.parse_args()
     repo=Path(__file__).resolve().parents[1];root=args.root.resolve()
     if root.exists():raise RuntimeError('Controller release already exists; inspect retained state')
-    if not read(args.cpu_proof).get('passed'):raise RuntimeError('CPU architecture verification required')
+    proof=read(args.cpu_proof)
+    if not proof.get('passed'):raise RuntimeError('CPU controller verification required')
+    for name,expected in proof.get('files_sha256',{}).items():
+        if sha(Path(name))!=expected:raise RuntimeError('Verified controller dependency changed: '+name)
     pointer=repo/'runs/local_a100_current.json';owner=read(pointer)
     old_cfg=read(owner['config']);old=Path(owner['root'])
     status=read(old/'status.json')
@@ -82,8 +85,8 @@ def main():
         time.sleep(.2)
     else:raise RuntimeError('New controller did not publish active GPU status')
     receipt={'replaced_controller_pid':pid,'replaced_idle_pid':burn,'new_controller_pid':child.pid,
-             'old_root':str(old),'new_root':str(root),'old_run':old_run,'current_v5_run':actual,
-             'v6_handoff':'drain V5 results then follow accepted eight-rank production pointer',
+             'old_root':str(old),'new_root':str(root),'old_run':old_run,'current_training_run':actual,
+             'production_handoff':'drain completed results then follow verified eight-rank production transitions',
              'idle_occupation_preserved':True,'time':time.time()}
     write(root/'migration_receipt.json',receipt)
     update={**owner,'watcher_pid':child.pid,'root':str(root),'config':str(root/'controller_CONFIG.json'),

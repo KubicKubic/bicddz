@@ -1,0 +1,106 @@
+{
+  "branch_cleanup": {
+    "removed_branch": "local-pre-publish-74054",
+    "commit": "40ebbf5875870e6806149f5f78f44547bf0e63d4",
+    "bundle": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/repo_cleanup_20261006/local-pre-publish-74054.bundle",
+    "bundle_sha256": "d7ec7348020f13974a8c98035f680b2c3e30059f08738f97e9eb46ba3953ea33",
+    "bundle_verified": true,
+    "unique_old_root_commit_preserved": true,
+    "lfs_objects": [
+      {
+        "path": "models/policy.msgpack",
+        "oid": "d741ac8e802235f736aa4a4a85cb867b0956423d4b74c931697b8136c9f18d8f",
+        "local_lfs_object_retained": true
+      },
+      {
+        "path": "models/ema_policy.msgpack",
+        "oid": "4c4c21cd206260c8d372b61fc7d6f93be988e8eecc4d33122ef4e81884e24d31",
+        "local_lfs_object_retained": true
+      },
+      {
+        "path": "models/latest_checkpoint.msgpack",
+        "oid": "f4f529ad72e489d3e83157f53b88ecb066c0d722d30618c199d90da44476884c",
+        "local_lfs_object_retained": true
+      }
+    ],
+    "restore_command": "git fetch /mnt/pfs/guoyuchong/guoyuchong/ddz/runs/repo_cleanup_20261006/local-pre-publish-74054.bundle refs/heads/local-pre-publish-74054:refs/heads/local-pre-publish-74054",
+    "reason": "user requested unused branch cleanup; old pre-publication backup superseded by current main",
+    "no_lfs_pruning": true,
+    "time": 1791293730.7411654
+  },
+  "branches_remaining": [
+    "main"
+  ],
+  "remote_branches_remaining": [
+    "origin/main"
+  ],
+  "model_release": {
+    "family": "V6",
+    "policy_kind": "raw",
+    "relative_step": 50600,
+    "global_step": 77154,
+    "parameters": 8014192,
+    "ema_decay": 0.999,
+    "ema_rollout_updates": 11600,
+    "optimizer_step": 5341622,
+    "training_config": "config.json",
+    "raw_policy": "policy.msgpack",
+    "ema_policy": "ema_policy.msgpack",
+    "resume_checkpoint": "latest_checkpoint.msgpack",
+    "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "files_sha256": {
+      "config.json": "db65eb1930e1df8d370f7617b4b177891153815af846e3573f81ca6264e89045",
+      "policy.msgpack": "e15d9edc0aa63c99e6171b4acdf6193843b0421064d154f586767a9aaff23391",
+      "ema_policy.msgpack": "27076e8152d8d9eaa3c43be5ea8974d88af21b47b8904dfb4610c60a6b110670",
+      "latest_checkpoint.msgpack": "fb72a697cd2a2a5909c8f336aca086cf29aa82de1105d65c3a8a109f361bbcef"
+    }
+  },
+  "bundle_checked_against_full_state": true,
+  "model_bytes": {
+    "config.json": 1359,
+    "policy.msgpack": 32068993,
+    "ema_policy.msgpack": 32068993,
+    "latest_checkpoint.msgpack": 714927574
+  },
+  "local_controller_handoff": {
+    "replaced_controller_pid": 3257883,
+    "replaced_idle_pid": 3436498,
+    "new_controller_pid": 3450572,
+    "old_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_follow_500_65536_v1",
+    "new_root": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_trim_follow_500_65536_v1",
+    "old_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v5_cluster8_env2x_batch2x_now_v2/production/training",
+    "current_training_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
+    "production_handoff": "drain completed results then follow verified eight-rank production transitions",
+    "idle_occupation_preserved": true,
+    "time": 1791294006.467793
+  },
+  "controller_verification": {
+    "passed": true,
+    "tests_passed": 13,
+    "seconds": 1.14,
+    "test_command": "pytest -q tests/test_local_advantage_handoff.py tests/test_v6_handoff.py::test_local_controller_follows_only_verified_v6_and_preserves_initial_checkpoint_on_restart tests/test_v6_handoff.py::test_missing_proof_or_protocol_change_never_hands_off_local_gpu",
+    "files_sha256": {
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/ddz/local_a100_controller.py": "2f2811d426535db28c53f2112218fcac98f93dd48c0a88d38b9345841b961647",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/scripts/prepare_local_v6.py": "04471f54535ddc05a13ed5e4b029883d6e04d7ecf433474859ddc460cf2e37e9",
+      "/mnt/pfs/guoyuchong/guoyuchong/ddz/tests/test_local_advantage_handoff.py": "e5b1cd0f029e018f3ed7a9b214ea3d03d385f1a5ba26c19c4668fba8165de15e"
+    },
+    "time": 1791294001.8602014
+  },
+  "gpu_status": {
+    "state": "idle_gpu_occupied",
+    "burn_pid": 3450576,
+    "controller": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_trim_follow_500_65536_v1",
+    "time": 1791294226.6718485
+  },
+  "local_gpu_utilization_percent": 100,
+  "completed_benchmarks_preserved": 100,
+  "live_training_dependencies_preserved": true,
+  "pending_crop_dependencies_preserved": true,
+  "qoj_source_changes_included": [
+    "document continuous rated play",
+    "small tmux log pane and resize hooks",
+    "existing launch/attach helper"
+  ],
+  "qoj_shell_syntax_checked": true,
+  "time": 1791294232.3862977
+}

@@ -6,6 +6,10 @@
 SHA-256、EMA rollout 计数及原始训练配置。三个 `.msgpack` 使用 Git LFS；克隆后
 先运行 `git lfs install --local`，再运行 `git lfs pull`。上线默认使用 raw policy，EMA 单独保留。
 
+当前仓库发布包是 **V6 / 8,014,192 参数 / 全局 77154 step**（相对 50600），
+包含校验一致的 raw、EMA 和完整续训状态；EMA decay 0.999，rollout 计数 11600。
+分支和工作区整理记录见 [仓库整理与 checkpoint 同步](reports/REPO_CLEANUP_20261006.md)。
+
 ### QOJ 自动跟随 checkpoint
 
 `scripts/qoj_match.sh prepare` 默认启用 `ddz/qoj_checkpoint_watch.py`，每 5 秒

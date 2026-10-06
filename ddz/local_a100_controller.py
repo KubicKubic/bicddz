@@ -15,19 +15,40 @@ from .douzero_precision import completed_blocks,aggregate
 
 
 def follow_architecture(cfg,regular,root):
-    """After draining V5 benchmarks, follow a verified V6 production handoff."""
+    """Drain benchmarks, then follow a verified architecture or sample handoff."""
     pointer=cfg.get('follow_production_pointer')
     if not pointer:return regular
     current=read(pointer);run=Path(current['run'])
     candidate=read(run/'config.json')
     if candidate.get('model_family')!='V6' or str(run)==regular['run_dir']:return regular
     proof=read(current['proof'])
-    if (current.get('nranks')!=8 or not proof.get('passed') or proof.get('nranks')!=8 or
-        not proof.get('NCCL_evidence') or proof.get('parameters')!=8_014_192):
-        raise RuntimeError('V6 local evaluator handoff lacks accepted eight-rank proof')
-    from .upgrade_v6 import revised_config
     original=read(Path(regular['run_dir'])/'config.json')
-    if candidate!=revised_config(original):raise RuntimeError('Unregistered production architecture handoff')
+    trimming=original.get('model_family')=='V6'
+    parameters=proof.get('parameters')
+    if trimming:
+        from .trim_rollout_campaign import revised_config
+        try:expected=revised_config(original)
+        except ValueError as error:raise RuntimeError('Unregistered sample-selection handoff') from error
+        campaign=run.parent.parent
+        registration=read(campaign/'REQUEST.json');migration=read(campaign/'migration_receipt.json')
+        if (candidate!=expected or
+            Path(registration['old_root']).resolve()!=Path(regular['run_dir']).parent.parent.resolve() or
+            not migration.get('weights_adam_env_rng_vf_ema_retained') or
+            migration.get('iteration')!=registration.get('at_iteration')):
+            raise RuntimeError('Unregistered sample-selection handoff or changed retained state')
+        # Initial trimming acceptance proves exact counts and synchronization;
+        # its older frozen schema records parameter count in trainer status.
+        if parameters is None:
+            status=read(run/'status.json')
+            if proof.get('adv_keep_fraction')!=.5 or status.get('nranks')!=8:
+                raise RuntimeError('Trimming parameter-count evidence missing')
+            parameters=status.get('parameters')
+    else:
+        from .upgrade_v6 import revised_config
+        if candidate!=revised_config(original):raise RuntimeError('Unregistered production architecture handoff')
+    if (current.get('nranks')!=8 or not proof.get('passed') or proof.get('nranks')!=8 or
+        not proof.get('NCCL_evidence') or parameters!=8_014_192):
+        raise RuntimeError('V6 local evaluator handoff lacks accepted eight-rank proof')
     receipt=Path(root)/'architecture_handoff.json'
     if receipt.exists():
         record=read(receipt)
@@ -36,7 +57,8 @@ def follow_architecture(cfg,regular,root):
     else:
         first=read(run/'latest.json')['iteration']
         write(receipt,{'old_run':regular['run_dir'],'new_run':str(run),
-            'initial_step':first,'proof':current['proof'],'time':time.time()})
+            'initial_step':first,'proof':current['proof'],
+            'transition':'advantage_trim' if trimming else 'V5_to_V6','time':time.time()})
     result={**regular,'run_dir':str(run),'initial_steps':[first]}
     result['protocol']={**regular['protocol'],'architecture_transition':{
         'family':'V6','parameters':8_014_192,'first_global_step':candidate['global_source_iteration']+first}}

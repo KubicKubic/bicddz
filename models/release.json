@@ -1,12 +1,12 @@
 {
   "family": "V6",
   "policy_kind": "raw",
-  "relative_step": 50008,
-  "global_step": 76562,
+  "relative_step": 50600,
+  "global_step": 77154,
   "parameters": 8014192,
   "ema_decay": 0.999,
-  "ema_rollout_updates": 11008,
-  "optimizer_step": 5200212,
+  "ema_rollout_updates": 11600,
+  "optimizer_step": 5341622,
   "training_config": "config.json",
   "raw_policy": "policy.msgpack",
   "ema_policy": "ema_policy.msgpack",
@@ -14,8 +14,8 @@
   "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_attention_8m_now_v3/production/training",
   "files_sha256": {
     "config.json": "db65eb1930e1df8d370f7617b4b177891153815af846e3573f81ca6264e89045",
-    "policy.msgpack": "8259f4848e6bd443d6e3340c322cfbf7e9d8adda3cbe5f4682b31736939e39f6",
-    "ema_policy.msgpack": "359e9c209d722cfb7997df9730f6de06eb1c6dc53e2b6e6722572f3fe96bb192",
-    "latest_checkpoint.msgpack": "5b4dc63697dd18562845379c4e0cb6adc857cb52f4dd861699126faa25308d0f"
+    "policy.msgpack": "e15d9edc0aa63c99e6171b4acdf6193843b0421064d154f586767a9aaff23391",
+    "ema_policy.msgpack": "27076e8152d8d9eaa3c43be5ea8974d88af21b47b8904dfb4610c60a6b110670",
+    "latest_checkpoint.msgpack": "fb72a697cd2a2a5909c8f336aca086cf29aa82de1105d65c3a8a109f361bbcef"
   }
 }

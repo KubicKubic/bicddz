@@ -29,8 +29,13 @@ case "${1:-status}" in
     [[ -x "$DDZ_MATCH_ROOT/launch_current.sh" ]] || { echo 'Run prepare first'; exit 1; }
     printf -v DDZ_START_CMD '%q' "$DDZ_MATCH_ROOT/launch_current.sh"
     tmux new-session -d -s "$DDZ_SESSION" -x 150 -y 45 "$DDZ_START_CMD"
+    tmux set-window-option -t "$DDZ_SESSION:0" remain-on-exit on
     printf -v DDZ_LOG_CMD 'tail -F %q' "$DDZ_MATCH_ROOT/console.log"
-    tmux split-window -v -l 10 -t "$DDZ_SESSION:0" "$DDZ_LOG_CMD"
+    tmux split-window -v -l 4 -t "$DDZ_SESSION:0" "$DDZ_LOG_CMD"
+    # A 24-row attached terminal still needs room for the full state/value view.
+    # Scope both hooks to this session; other tmux sessions are unaffected.
+    tmux set-hook -t "$DDZ_SESSION" client-attached "resize-pane -t $DDZ_SESSION:0.1 -y 4"
+    tmux set-hook -t "$DDZ_SESSION" client-resized "resize-pane -t $DDZ_SESSION:0.1 -y 4"
     tmux select-pane -t "$DDZ_SESSION:0.0"
     ;;
   attach) exec tmux attach-session -t "$DDZ_SESSION" ;;

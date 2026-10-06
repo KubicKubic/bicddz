@@ -32,6 +32,14 @@ so the existing raw-policy watcher does not mistake them for new checkpoints.
 
 ## Persistent QOJ rated-match bot (explicit user instruction)
 
+**Latest user override (2026-10-06): resume continuous QOJ rated play.**
+The user subsequently instructed “你需要让它持续进行对战” and “你自己启动就行了”.
+This supersedes the earlier temporary-offline request. The old OFFLINE receipt
+is archived under `runs/qoj_match_v1/`; `ONLINE.json` records this resumption.
+Keep the single tmux supervisor and owned worker running, with raw checkpoint
+updates. Do not stop them under the superseded offline instruction.
+Eight-GPU training and the local DouZero evaluator continue normally.
+
 The user requires Fortune to play QOJ rated matches continuously in tmux.
 The session is `ddz_qoj_match`; deployment and live status are under
 `runs/qoj_match_v1/`. Use `scripts/qoj_match.sh prepare` to freeze a verified
@@ -105,8 +113,9 @@ The active V5 segment was interrupted under explicit user direction and the
 same remote queue allocation was recovered. Keep the 59 unsaved logged rounds
 in `source_metrics_before_pause.jsonl`; exclude them from resumed metrics.
 The checksum-bound pause receipt and actual remote process absence gate replace
-the normal completed-boundary gate. One V5 fallback to relative 51000 remains
-queued until V6 passes; never cancel it before actual eight-GPU acceptance.
+the normal completed-boundary gate. V6 passed actual eight-GPU acceptance at
+relative 50008 / global 76562; the V5 fallback was cancelled only after that
+acceptance. Historical failed and interrupted items remain retained.
 The first immediate candidate failed the unchanged optimizer-acceptance gate
 after a long-history round stopped at 4.1% of minibatches. V6 now warms newly
 born Adam coordinates over 1024 applied optimizer steps; mature coordinates
@@ -132,14 +141,15 @@ agreement and memory headroom. The old V5 successor stays queued until V6 passes
 a failed V6 task is retained and is never automatically retried.
 
 Local GPU ownership now resides in
-`runs/local_a100_v6_follow_500_65536_v1`; consult `runs/local_a100_current.json`
+`runs/local_a100_v6_trim_follow_500_65536_v1`; consult `runs/local_a100_current.json`
 for the current process. It preserves the previous precision result/benchmark
 cache, drains V5 checkpoints, then follows an accepted V6 production pointer.
 Keep the single local controller, every-500-step BEST benchmark and idle occupation.
 QOJ code `v5-74162-77a7cbc0c4` supports background V5->V6 Policy construction,
 validation and warmup. The serving thread commits between requests/decisions;
 further V6 updates replace weights in place. Persisted V6 activation can resume
-from the frozen V5 fallback. Live weights remain V5 until V6 is actually promoted.
+from the frozen V5 fallback. The actual serving checkpoint is recorded in
+`runs/qoj_match_v1/active_model.json`; never infer it from an old deployment bundle.
 See `reports/V6_ATTENTION_SCALING_20261006.md` and its JSON proof index.
 
 The V4 freeze incorporates the user's subsequent architecture audit. Its READY
@@ -170,3 +180,10 @@ Do not change live frozen code or duplicate the handoff. Its eight-round
 nranks=8/NCCL, exact-count, optimizer, replica and memory gates must pass before
 promotion; preserve the old successor until then. CPU engineering proof alone
 does not establish GPU speed or playing-strength gains.
+
+The local controller additionally accepts this registered one-field V6 sampling
+handoff after its eight-rank proof and exact retained-state receipt. The initial
+trimming proof's older schema obtains model parameter count from actual trainer
+status; require 8,014,192 and nranks=8. Preserve the completed benchmark cache,
+the initial handoff point and the single idle workload. Do not restart for each
+checkpoint. See `reports/REPO_CLEANUP_20261006.md` for the verified controller update.
