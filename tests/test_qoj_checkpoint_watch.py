@@ -243,3 +243,61 @@ def test_deployed_worker_records_actual_model_after_hot_update(tmp_path,monkeypa
         assert status['checkpoint_watch_enabled']
         assert 'FAKE_KEY_MUST_NOT_APPEAR' not in (root/'events.jsonl').read_text()
     finally:state['lock'].close()
+
+
+def test_pinned_worker_ignores_newer_resume_marker_and_publishes_actual_release(tmp_path,monkeypatch):
+    import runpy
+    from ddz.export_checkpoint import sha
+    root=tmp_path/'bot';root.mkdir()
+    frozen=tmp_path/'frozen';frozen.mkdir()
+    cfg={'model':{},'ppo':{'gae_clock':'own'}}
+    (frozen/'config.json').write_text(json.dumps(cfg))
+    (frozen/'policy.msgpack').write_bytes(serialization.to_bytes({'w':np.array([2.],np.float32)}))
+    (root/'key').write_text('FAKE_PIN_KEY_MUST_NOT_APPEAR')
+    deployment={'token_file':str(root/'key'),'base':'http://test','username':'Fortune',
+        'tmux_session':'test','source_checkpoint':str(frozen/'policy.msgpack'),
+        'model_dir':str(frozen),'global_step':106,'relative_step':6,
+        'checkpoint_sha256':sha(frozen/'policy.msgpack')}
+    atomic_json(root/'deployment.json',deployment)
+    atomic_json(root/'active_model.json',{'global_step':999,'source_checkpoint':'newer'})
+    class Client:
+        def __init__(self,*args):pass
+        def request(self,path,payload=None):
+            if path=='/info':return 200,{'match_rounds':9}
+            if path=='/me':return 200,{'username':'Fortune','game':None,'score':0}
+            raise AssertionError(path)
+    class Model:
+        def __init__(self,config,policy):
+            assert Path(policy)==frozen/'policy.msgpack'
+            self.params=serialization.msgpack_restore(Path(policy).read_bytes())
+            self.last_bid_diagnostics=None
+        def decide(self,raw):
+            self.last_inference={'display_value_by_seat':[1.,None,None],
+                                 'value_by_seat':[1.,-1.,0.]}
+            return 'bid',{'version':raw['version'],'value':int(self.params['w'][0])}
+    def play(client,guard,**kwargs):
+        kind,payload=guard.decide({'id':1,'version':1,'remaining':10000})
+        assert kind=='bid' and payload['value']==2
+    class UnexpectedWatch:
+        def __init__(self,*args,**kwargs):
+            raise AssertionError('A pinned release must not follow training')
+    monkeypatch.setenv('DDZ_MATCH_ROOT',str(root))
+    monkeypatch.delenv('DDZ_DEPLOYMENT_FILE',raising=False)
+    monkeypatch.setattr('ddz.api.Client',Client)
+    monkeypatch.setattr('ddz.api_v5.Policy',Model)
+    monkeypatch.setattr('ddz.api.run',play)
+    monkeypatch.setattr('ddz.qoj_checkpoint_watch.CheckpointWatcher',UnexpectedWatch)
+    worker=Path(__file__).resolve().parents[1]/'deploy/qoj/worker.py'
+    state=runpy.run_path(str(worker))
+    try:
+        status=json.loads((root/'status.json').read_text())
+        decision=json.loads((root/'last_decision.json').read_text())
+        actual=json.loads((root/'deployment.json').read_text())
+        active=json.loads((root/'active_model.json').read_text())
+        assert status['global_step']==decision['global_step']==actual['global_step']==active['global_step']==106
+        assert status['checkpoint_sha256']==active['checkpoint_sha256']==deployment['checkpoint_sha256']
+        assert status['checkpoint_watch_enabled'] is False
+        assert actual['policy_selection']==active['policy_selection']=='pinned'
+        assert 'checkpoint_watch' not in actual
+        assert 'FAKE_PIN_KEY_MUST_NOT_APPEAR' not in (root/'events.jsonl').read_text()
+    finally:state['lock'].close()

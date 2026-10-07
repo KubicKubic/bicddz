@@ -1,0 +1,16 @@
+{
+  "bundle": "best_77362",
+  "family": "V6",
+  "policy_kind": "raw",
+  "global_step": 77362,
+  "relative_step": 50808,
+  "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+  "expected_score": 0.13718414306640625,
+  "ci95": [
+    0.12689208984375,
+    0.1473541259765625
+  ],
+  "deals": 65536,
+  "games": 393216,
+  "policy_selection": "pinned"
+}

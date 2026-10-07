@@ -11,7 +11,7 @@ from ddz.api import (APIError,RetryDecision,TemporaryAPIError,Client,run,
 from ddz.api_v5 import Policy
 from ddz.api_recovery import GuardedPolicy
 from ddz.api_dashboard import action_text,clean,public_snapshot
-from ddz.qoj_checkpoint_watch import CheckpointWatcher,resume_paths
+from ddz.qoj_checkpoint_watch import CheckpointWatcher,resume_paths,model_signature
 
 root=Path(os.environ.get('DDZ_MATCH_ROOT',Path(__file__).resolve().parent)).resolve()
 cfg=json.loads(Path(os.environ.get('DDZ_DEPLOYMENT_FILE',root/'deployment.json')).read_text())
@@ -76,7 +76,8 @@ status={'state':'warming','pid':os.getpid(),'tmux_session':cfg['tmux_session'],
     'checkpoint':cfg['source_checkpoint'],'global_step':cfg['global_step'],
     'checkpoint_sha256':cfg['checkpoint_sha256'],'accepted_actions':0,'conflicts':0,
     'games_completed':len(finished_games),'matches_completed':len(finished_matches),
-    'score_delta':score_delta,'fallback_decisions':0,'recoveries':0}
+    'score_delta':score_delta,'fallback_decisions':0,'recoveries':0,
+    'checkpoint_watch_enabled':bool(cfg.get('checkpoint_watch'))}
 
 def publish(**fields):
     status.update(fields,time=time.time(),last_progress=time.time())
@@ -196,6 +197,22 @@ try:
         event({'event':'model_resume_rejected','error':str(error).replace(token,'[REDACTED]')})
         model=Policy(model_dir/'config.json',model_dir/'policy.msgpack');resumed=None
     model.capture_observation=True
+    if not watch:
+        # A deliberate pin can select an older checkpoint. Ignore the previous
+        # latest-policy resume marker and persist the actual warmed release.
+        metadata={'source_run':str(model_dir),'source_checkpoint':str(policy_path),
+            'config_path':str(config_path),'relative_step':cfg['relative_step'],
+            'global_step':cfg['global_step'],'policy_kind':'raw',
+            'model_signature':model_signature(json.loads(config_path.read_text())),
+            'checkpoint_sha256':cfg['checkpoint_sha256'],
+            'policy_selection':'pinned','activated_at':time.time()}
+        cfg.update(policy_kind='raw',policy_selection='pinned',
+            active_weight_config=str(config_path))
+        atomic_json(root/'active_model.json',metadata)
+        atomic_json(root/'deployment.json',cfg)
+        event({'event':'model_pinned','global_step':cfg['global_step'],
+            'checkpoint_sha256':cfg['checkpoint_sha256'],
+            'summary':f"Pinned raw step={cfg['global_step']}; automatic checkpoint updates disabled"})
     if watch:
         def activated(metadata):
             cfg.update({key:metadata[key] for key in

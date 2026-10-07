@@ -1,0 +1,188 @@
+{
+  "identity": {
+    "protocol": "edwardpooh_resnet2_best_fixed_bid3_six_role_legs_qoj_catalogue_v3",
+    "checkpoint_step": 50808,
+    "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "run_dir": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/production/training",
+    "official_engine_commit": "718a5c920bf3361e34178a38f3b80458e176b351",
+    "resnet_commit": "85afd773abd01c411f543d6ade5b99a4fde327d2",
+    "resnet_source_sha256": {
+      "douzero/dmc/models_res.py": "907e3c5439f0cff1ec70645ad9ee2a59428d7db937ad29ca0485a070455cc276",
+      "douzero/env/env_res.py": "12ab2e27bbf33defbee8a5cd043369aae0cd80dd55226d61bea98e1485dd4094"
+    },
+    "seed": 911001,
+    "deals": 65536,
+    "chunk_deals": 256,
+    "role_order": [
+      "landlord",
+      "landlord_down",
+      "landlord_up"
+    ],
+    "decision": "deterministic API body-then-conditional-wing argmax",
+    "scoring": "QOJ raw focus-seat score; landlord divided by 2; equal role mean",
+    "uncertainty": "5000 paired whole-deal bootstrap draws; six legs stay together",
+    "limitations": [
+      "Fixed bid 3; bidding strength is not measured",
+      "Publisher-released ResNet best weights pinned by commit and SHA-256",
+      "Both policies use training/QOJ rules: no bomb or rocket among attachments",
+      "QOJ linear bomb/spring rewards differ from DouZero exponential ADP"
+    ],
+    "runtime": "jax_resnet_microbatch_catalogue_v3",
+    "policy_microbatch_deals": 16,
+    "audit_engine": false,
+    "legal_actions": "Full training/QOJ catalogue including explicit ambiguous-plane interpretations; original publisher order used for exact score ties",
+    "tie_fallback": "publisher CPU FP32 when top-two gap <= 0.0005*max(1,max_abs_score)",
+    "source_sha256": {
+      "compare_efficiency_douzero_jax.py": "aeb96fedbdad1e93ad0198f9b7ddd09026b18ebacad196a0c80c22d52b4b5112",
+      "douzero_jax.py": "422b9f948fab89a2db14b022088067635defacb87c8639dcb9fd5fd70b67fa94",
+      "douzero_resnet_adapter.py": "748e04c201fd5d64c9b50868709a3cc41d5a5e8c67f98645ad25a5fec600c0f5",
+      "model_v5.py": "324e098542cec570e9f7cf00838cf53761cf84bad1e041c654feb29608cecf23",
+      "model_efficiency.py": "64fe656351eb998b0e7672fc14faa58a45d659f8c0984af24c8b4852e622e045",
+      "policy_v5.py": "850ba8770185b31aeb16af8d907928c01334652ad04a9de47114f14e77d1daa2",
+      "env_v4.py": "a48af6d46b199a84a4e9ab93a5dd50d3017623412fa5cde0c88e34391a4a6c1c",
+      "env_v2.py": "db7052e6ea32d317f1b3b979cf733d6a6d51241f6173259d8c40b4705ace8d81",
+      "candidates_v3.py": "81e361969073cfb0256144398e088839ceb1dd95a5468ff44fa0723634ff91a7",
+      "actions.py": "554f6637affe94e9579ccfa6b04a0499ae96c63008b96a34d588208884fa348b",
+      "compare_v3_v2_all_roles.py": "f0fa70b5e634d419402c381586ddf110a649266b8dbde487b923258a886364fe"
+    },
+    "hardware": {
+      "policy_backend": "cuda",
+      "policy_device": "NVIDIA A100-SXM4-80GB",
+      "policy_devices": 1,
+      "douzero_backend": "jax_cuda_fp32",
+      "authorization": "explicit user request for local single-A100 evaluation"
+    },
+    "baseline": "BEST",
+    "weight_sha256": {
+      "landlord": "df11501facc740b10bb5f8ea32e7476b4aa32af9eff4371ffb6c27aef85009ef",
+      "landlord_down": "ab356cd313e871f2cc0ad33018e5aa3b2a8b5524e22c5731a6465152c7ff20b7",
+      "landlord_up": "a4b502fa1a7a04b2cce34c404e7f6f5c5c6b54e7865c1129b136e1e5aa28e72c"
+    },
+    "weights_provenance": "https://github.com/EdwardPooh/douzero-resnet-2.0/tree/85afd773abd01c411f543d6ade5b99a4fde327d2/Douzero_Resnet/baseline/best"
+  },
+  "summary": {
+    "deals": 65536,
+    "games": 393216,
+    "equal_role_expected_score": {
+      "mean": 0.13718414306640625,
+      "ci95": [
+        0.12689208984375,
+        0.1473541259765625
+      ]
+    },
+    "equal_role_team_win_rate": {
+      "mean": 0.5024210611979166,
+      "ci95": [
+        0.5012868245442709,
+        0.5035629908243815
+      ]
+    },
+    "roles": {
+      "landlord": {
+        "expected_score": {
+          "mean": 0.19100189208984375,
+          "ci95": [
+            0.1759185791015625,
+            0.20576648712158202
+          ]
+        },
+        "candidate_alone_team_win_rate": {
+          "mean": 0.388580322265625,
+          "ci95": [
+            0.3849639892578125,
+            0.3922885894775391
+          ]
+        },
+        "candidate_on_other_two_team_win_rate": {
+          "mean": 0.6229705810546875,
+          "ci95": [
+            0.6192169189453125,
+            0.6264347076416016
+          ]
+        }
+      },
+      "landlord_down": {
+        "expected_score": {
+          "mean": 0.131011962890625,
+          "ci95": [
+            0.11624908447265625,
+            0.14563922882080077
+          ]
+        },
+        "candidate_alone_team_win_rate": {
+          "mean": 0.6164398193359375,
+          "ci95": [
+            0.6128082275390625,
+            0.6201019287109375
+          ]
+        },
+        "candidate_on_other_two_team_win_rate": {
+          "mean": 0.3894195556640625,
+          "ci95": [
+            0.3856960296630859,
+            0.3931884765625
+          ]
+        }
+      },
+      "landlord_up": {
+        "expected_score": {
+          "mean": 0.08953857421875,
+          "ci95": [
+            0.07450103759765625,
+            0.10448455810546875
+          ]
+        },
+        "candidate_alone_team_win_rate": {
+          "mean": 0.61175537109375,
+          "ci95": [
+            0.608001708984375,
+            0.6154941558837891
+          ]
+        },
+        "candidate_on_other_two_team_win_rate": {
+          "mean": 0.3853607177734375,
+          "ci95": [
+            0.3816986083984375,
+            0.3890232086181641
+          ]
+        }
+      }
+    },
+    "team_mirror": {
+      "win_rate": {
+        "mean": 0.5057754516601562,
+        "ci95": [
+          0.50408935546875,
+          0.5074316024780273
+        ]
+      },
+      "expected_score": {
+        "mean": 0.19100189208984375,
+        "ci95": [
+          0.1759185791015625,
+          0.20576648712158202
+        ]
+      },
+      "landlord_win_rate": {
+        "mean": 0.388580322265625,
+        "ci95": [
+          0.3849639892578125,
+          0.3922885894775391
+        ]
+      },
+      "farmer_team_win_rate": {
+        "mean": 0.6229705810546875,
+        "ci95": [
+          0.6192169189453125,
+          0.6264347076416016
+        ]
+      }
+    }
+  },
+  "invalid_actions": 0,
+  "execution": {
+    "shard_index": 0,
+    "shard_count": 1
+  },
+  "runtime_seconds": 3646.1407577153295
+}

@@ -1,0 +1,151 @@
+{
+  "state": "best_score_weights_uploaded_and_serving",
+  "bundle": "models/best_77362",
+  "selection": {
+    "criterion": "maximum completed equal-role expected score",
+    "completed_versions": 106,
+    "selected": {
+      "step": 50808,
+      "global_step": 77362,
+      "expected_score": 0.13718414306640625,
+      "low": 0.12689208984375,
+      "high": 0.1473541259765625,
+      "win_rate": 0.5024210611979166,
+      "deals": 65536,
+      "games": 393216,
+      "roles": {
+        "landlord": {
+          "expected_score": {
+            "mean": 0.19100189208984375,
+            "ci95": [
+              0.1759185791015625,
+              0.20576648712158202
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.388580322265625,
+            "ci95": [
+              0.3849639892578125,
+              0.3922885894775391
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.6229705810546875,
+            "ci95": [
+              0.6192169189453125,
+              0.6264347076416016
+            ]
+          }
+        },
+        "landlord_down": {
+          "expected_score": {
+            "mean": 0.131011962890625,
+            "ci95": [
+              0.11624908447265625,
+              0.14563922882080077
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.6164398193359375,
+            "ci95": [
+              0.6128082275390625,
+              0.6201019287109375
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.3894195556640625,
+            "ci95": [
+              0.3856960296630859,
+              0.3931884765625
+            ]
+          }
+        },
+        "landlord_up": {
+          "expected_score": {
+            "mean": 0.08953857421875,
+            "ci95": [
+              0.07450103759765625,
+              0.10448455810546875
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.61175537109375,
+            "ci95": [
+              0.608001708984375,
+              0.6154941558837891
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.3853607177734375,
+            "ci95": [
+              0.3816986083984375,
+              0.3890232086181641
+            ]
+          }
+        }
+      },
+      "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+      "result": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_entropy01_follow_500_65536_v1/step_0050808/BEST/summary.json"
+    },
+    "ratings_sha256": "1ba70a647fdaca18a7027b5e49d951991a2c613ce123d36584326e9374760653",
+    "protocol": "edwardpooh_resnet2_best_fixed_bid3_six_role_legs_qoj_catalogue_v3",
+    "selected_at": 1791358188.193438
+  },
+  "cpu_verification": {
+    "passed": true,
+    "global_step": 77362,
+    "relative_step": 50808,
+    "policy_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "parameters": 8014192,
+    "backend": "cpu",
+    "warm_seconds": 2.425901334732771,
+    "frozen_release_verified": true,
+    "parameter_finite_and_bidding_playing_inference_verified": true,
+    "checkpoint_watch_disabled": true,
+    "time": 1791358259.1356616
+  },
+  "targeted_checks_passed": 6,
+  "lfs_uploaded_objects": {
+    "policy.msgpack": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "ema_policy.msgpack": "3622bada4b5c73cce0b5a3c1132b89cbc747b8e665970e463f183fffaedb996a"
+  },
+  "live_release": "v6-77362-574012aa7f",
+  "global_step": 77362,
+  "relative_step": 50808,
+  "policy_selection": "pinned",
+  "checkpoint_watch_enabled": false,
+  "owned_previous_supervisor_and_worker_exited": true,
+  "tmux_session": "ddz_qoj_match",
+  "new_worker_pid": 3705385,
+  "same_game_resumed": true,
+  "first_verified_live": 1791358388.566629,
+  "latest_status": {
+    "state": "in_game",
+    "pid": 3705385,
+    "global_step": 77362,
+    "relative_step": null,
+    "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "checkpoint_watch_enabled": false,
+    "game": 39057,
+    "version": 21,
+    "phase": "playing",
+    "our_auto": false,
+    "accepted_actions": 23,
+    "fallback_decisions": 0,
+    "games_completed": 4475,
+    "matches_completed": 497,
+    "time": 1791358504.2863262
+  },
+  "verified_live_decision": {
+    "game": 39057,
+    "version": 19,
+    "endpoint": "pass",
+    "source": "model",
+    "global_step": 77362,
+    "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "decision_seconds": 0.04489496722817421,
+    "time": 1791358499.3888526
+  },
+  "time": 1791358504.5559976,
+  "resumed_game": 39051
+}

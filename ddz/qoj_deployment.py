@@ -31,6 +31,8 @@ def prepare(repo, root, models, token_file, username, base, session, python,
         'active_client_version': 9, 'model_dir': str(frozen / 'models'),
         'active_code': str(frozen / 'code'), 'active_worker': str(frozen / 'worker.py'),
         'active_launcher': str(root / 'launch_current.sh'), 'release': name,
+        'policy_kind': 'raw',
+        'policy_selection': 'latest' if checkpoint_pointer is not None else 'pinned',
     }
     if checkpoint_pointer is not None:
         config['checkpoint_watch']={'pointer':str(Path(checkpoint_pointer).resolve()),

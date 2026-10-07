@@ -1,0 +1,113 @@
+{
+  "family": "V6",
+  "bundle_kind": "evaluated_policy_snapshot",
+  "policy_kind": "raw",
+  "relative_step": 50808,
+  "global_step": 77362,
+  "parameters": 8014192,
+  "ema_decay": 0.999,
+  "training_config": "config.json",
+  "raw_policy": "policy.msgpack",
+  "ema_policy": "ema_policy.msgpack",
+  "resume_checkpoint": null,
+  "source_run": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/production/training",
+  "source_checkpoint": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/v6_cluster8_entropy01_top50_now_v1/production/training/policy_0050808.msgpack",
+  "evaluation": "BEST_evaluation.json",
+  "ema_evaluated": false,
+  "selection": {
+    "criterion": "maximum completed equal-role expected score",
+    "completed_versions": 106,
+    "selected": {
+      "step": 50808,
+      "global_step": 77362,
+      "expected_score": 0.13718414306640625,
+      "low": 0.12689208984375,
+      "high": 0.1473541259765625,
+      "win_rate": 0.5024210611979166,
+      "deals": 65536,
+      "games": 393216,
+      "roles": {
+        "landlord": {
+          "expected_score": {
+            "mean": 0.19100189208984375,
+            "ci95": [
+              0.1759185791015625,
+              0.20576648712158202
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.388580322265625,
+            "ci95": [
+              0.3849639892578125,
+              0.3922885894775391
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.6229705810546875,
+            "ci95": [
+              0.6192169189453125,
+              0.6264347076416016
+            ]
+          }
+        },
+        "landlord_down": {
+          "expected_score": {
+            "mean": 0.131011962890625,
+            "ci95": [
+              0.11624908447265625,
+              0.14563922882080077
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.6164398193359375,
+            "ci95": [
+              0.6128082275390625,
+              0.6201019287109375
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.3894195556640625,
+            "ci95": [
+              0.3856960296630859,
+              0.3931884765625
+            ]
+          }
+        },
+        "landlord_up": {
+          "expected_score": {
+            "mean": 0.08953857421875,
+            "ci95": [
+              0.07450103759765625,
+              0.10448455810546875
+            ]
+          },
+          "candidate_alone_team_win_rate": {
+            "mean": 0.61175537109375,
+            "ci95": [
+              0.608001708984375,
+              0.6154941558837891
+            ]
+          },
+          "candidate_on_other_two_team_win_rate": {
+            "mean": 0.3853607177734375,
+            "ci95": [
+              0.3816986083984375,
+              0.3890232086181641
+            ]
+          }
+        }
+      },
+      "checkpoint_sha256": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+      "result": "/mnt/pfs/guoyuchong/guoyuchong/ddz/runs/local_a100_v6_entropy01_follow_500_65536_v1/step_0050808/BEST/summary.json"
+    },
+    "ratings_sha256": "1ba70a647fdaca18a7027b5e49d951991a2c613ce123d36584326e9374760653",
+    "protocol": "edwardpooh_resnet2_best_fixed_bid3_six_role_legs_qoj_catalogue_v3",
+    "selected_at": 1791358188.193438
+  },
+  "files_sha256": {
+    "config.json": "41752be0787952d61f89d507e06b83cbaed6db5ffc22bec49cb77e7da5df3b3f",
+    "policy.msgpack": "a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f",
+    "ema_policy.msgpack": "3622bada4b5c73cce0b5a3c1132b89cbc747b8e665970e463f183fffaedb996a",
+    "BEST_evaluation.json": "70068f30265b61b13310116f10e933d30688917913f8dfab093ac50f62886ccd"
+  }
+}

@@ -257,3 +257,28 @@ only against the accepted entropy transition and a completed, nonfailed
 benchmark; this does not authorize retrying an evaluation failure. Use
 `runs/local_a100_current.json` for actual ownership and curve paths. See
 `reports/ENTROPY_RESUME_20261007.md` and its JSON proof index for accepted status.
+
+## Pin the highest scored checkpoint online (user override, 2026-10-07)
+
+The user requests uploading the highest scoring checkpoint to Git LFS and
+replacing the online bot with it. This supersedes automatic latest-checkpoint
+replacement for QOJ. The selected raw V6 checkpoint is relative 50808 / global
+77362, with the highest observed completed all-role BEST expected-score mean
+among 106 recorded versions: .1371841431, 95% interval [.1268920898, .1473541260],
+65536 deals / 393216 games. This is an observed ranking, not a significance claim
+against the runner-up. Its SHA-256 is
+`a86407046f8ec41b73024e592e10de5e3ba74546d2b29436624aa4a6fd29605f`.
+
+`models/BEST.json` points to the immutable `models/best_77362` LFS policy bundle;
+the raw policy was evaluated, and the matching EMA snapshot is retained separately.
+This bundle is a policy snapshot, with no fabricated full optimizer/environment
+resume state. The earlier complete bundle at `models/` remains retained.
+Prepare this pinned release with `ddz.qoj_deployment prepare --models
+models/best_77362` and no `--checkpoint-pointer`. Do not use the latest-following
+default `scripts/qoj_match.sh prepare` for this pin. The current launcher uses
+the immutable `v6-77362-574012aa7f` release; its worker records the actual pinned
+weights and ignores a prior, newer `active_model.json` on startup. Keep the single
+tmux rated-match supervisor running; training, every-500-step local evaluation
+and local idle occupation continue. Do not reenable latest-following without a
+subsequent user instruction. See `reports/BEST_QOJ_DEPLOYMENT_20261007.md` and
+the checksum-bound JSON deployment evidence.
